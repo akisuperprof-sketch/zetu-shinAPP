@@ -1,0 +1,103 @@
+[
+    {
+        "id": "q1",
+        "text": "年齢",
+        "type": "number",
+        "required": true
+    },
+    {
+        "id": "q16",
+        "text": "五行属性に関する質問 1",
+        "type": "select",
+        "options": [
+            "Option A",
+            "Option B"
+        ]
+    },
+    {
+        "id": "q17",
+        "text": "五行属性に関する質問 2",
+        "type": "select",
+        "options": [
+            "Option A",
+            "Option B"
+        ]
+    },
+    {
+        "id": "q18",
+        "text": "五行属性に関する質問 3",
+        "type": "select",
+        "options": [
+            "Option A",
+            "Option B"
+        ]
+    },
+    {
+        "id": "q19",
+        "text": "五行属性に関する質問 4",
+        "type": "select",
+        "options": [
+            "Option A",
+            "Option B"
+        ]
+    },
+    {
+        "id": "q20",
+        "text": "五行属性に関する質問 5",
+        "type": "select",
+        "options": [
+            "Option A",
+            "Option B"
+        ]
+    },
+    {
+        "id": "q21",
+        "text": "五行属性に関する質問 6",
+        "type": "select",
+        "options": [
+            "Option A",
+            "Option B"
+        ]
+    },
+    {
+        "id": "q22",
+        "text": "五行属性に関する質問 7",
+        "type": "select",
+        "options": [
+            "Option A",
+            "Option B"
+        ]
+    },
+    {
+        "id": "q23",
+        "text": "五行属性に関する質問 8",
+        "type": "select",
+        "options": [
+            "Option A",
+            "Option B"
+        ]
+    },
+    {
+        "id": "q24",
+        "text": "五行属性に関する質問 9",
+        "type": "select",
+        "options": [
+            "Option A",
+            "Option B"
+        ]
+    },
+    {
+        "id": "q25",
+        "text": "五行属性に関する質問 10",
+        "type": "select",
+        "options": [
+            "Option A",
+            "Option B"
+        ]
+    },
+    {
+        "id": "note",
+        "text": "Academicプランの残りの項目はL+Pの内容を含みます。",
+        "type": "note"
+    }
+]

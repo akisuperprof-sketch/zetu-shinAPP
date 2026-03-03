@@ -1,0 +1,11 @@
+# 開発環境向けのgitleaks追加設定
+title = "gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allow list for testing files"
+paths = [
+  "dummy_file_ignore\\.js"
+]

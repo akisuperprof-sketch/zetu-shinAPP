@@ -1,0 +1,16 @@
+[
+    {
+        "id": "v0.0.1-legacy",
+        "name": "Legacy Baseline",
+        "description": "現行の本番稼働バージョン（旧ロジック）",
+        "isDefault": true,
+        "releaseDate": "2025-01-01"
+    },
+    {
+        "id": "v0.1.0-lpa-foundation",
+        "name": "L/P/A Foundation",
+        "description": "L/P/A 3プラン設計の基盤実装版",
+        "isDefault": false,
+        "releaseDate": "2026-02-27"
+    }
+]

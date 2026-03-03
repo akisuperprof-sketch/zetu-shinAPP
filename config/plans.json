@@ -1,0 +1,37 @@
+{
+    "lite": {
+        "id": "lite",
+        "name": "Liteプラン",
+        "tagline": "簡易舌診＋食養生タイプ",
+        "description": "一般向け入口。寒熱判定中心。",
+        "features": [
+            "寒熱スペクトラム解析",
+            "基本食養生アドバイス"
+        ],
+        "questionCount": 6
+    },
+    "pro": {
+        "id": "pro",
+        "name": "Proプラン",
+        "tagline": "寒熱×虚実 本格判定タイプ",
+        "description": "中級者・施術者向け。寒熱虚実の4象限判定。",
+        "features": [
+            "寒熱×虚実マトリクス解析",
+            "舌体・舌苔詳細分析",
+            "多角的改善提案"
+        ],
+        "questionCount": 15
+    },
+    "academic": {
+        "id": "academic",
+        "name": "Academicプラン",
+        "tagline": "舌診アトラス搭載・研究用",
+        "description": "専門家・研究者向け。五行分類を含む立体構造解析。",
+        "features": [
+            "五行×寒熱虚実立体解析",
+            "舌診アトラス照合",
+            "臨床研究データ連携"
+        ],
+        "questionCount": 25
+    }
+}

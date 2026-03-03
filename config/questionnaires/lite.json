@@ -1,0 +1,50 @@
+[
+    {
+        "id": "q1",
+        "text": "年齢",
+        "type": "number",
+        "required": true
+    },
+    {
+        "id": "q2",
+        "text": "性別",
+        "type": "select",
+        "options": [
+            "男性",
+            "女性",
+            "その他"
+        ],
+        "required": true
+    },
+    {
+        "id": "q3",
+        "text": "冷えを感じやすいですか？",
+        "type": "range",
+        "minLabel": "全くない",
+        "maxLabel": "強く感じる"
+    },
+    {
+        "id": "q4",
+        "text": "のぼせやすいですか？",
+        "type": "range",
+        "minLabel": "全くない",
+        "maxLabel": "強く感じる"
+    },
+    {
+        "id": "q5",
+        "text": "疲れやすいですか？",
+        "type": "range",
+        "minLabel": "元気",
+        "maxLabel": "非常に疲れやすい"
+    },
+    {
+        "id": "q6",
+        "text": "食欲の変動はありますか？",
+        "type": "select",
+        "options": [
+            "安定している",
+            "食べ過ぎる",
+            "食欲がない"
+        ]
+    }
+]
