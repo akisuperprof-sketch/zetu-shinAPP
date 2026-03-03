@@ -3,6 +3,10 @@
     "devCommand": "vite --port $PORT",
     "rewrites": [
         {
+            "source": "/api/(.*)",
+            "destination": "/api/index"
+        },
+        {
             "source": "/app",
             "destination": "/app/index.html"
         },
