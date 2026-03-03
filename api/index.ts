@@ -32,15 +32,37 @@ const handlers: Record<string, any> = {
 };
 
 export default async function handler(req: any, res: any) {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const pathname = url.pathname;
+    // Standard CORS headers
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
-    // Exact match first
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
+    const host = req.headers.host || 'localhost';
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const url = new URL(req.url, `${protocol}://${host}`);
+    let pathname = url.pathname;
+
+    // Normalize pathname (sometimes Vercel passes internal paths during rewrites)
+    if (pathname === '/api/index' || pathname === '/api') {
+        // Fallback or specific logic if needed, but usually the rewrites pass the original path
+    }
+
     const handlerFunc = handlers[pathname];
 
     if (handlerFunc) {
-        return handlerFunc(req, res);
+        try {
+            return await handlerFunc(req, res);
+        } catch (error: any) {
+            console.error(`Error in handler for ${pathname}:`, error);
+            return res.status(500).json({ error: 'Internal Server Error', details: error.message });
+        }
     }
 
-    return res.status(404).json({ error: `Not Found (Unified API): ${pathname}` });
+    return res.status(404).json({ error: `Not Found (Unified API Entry): ${pathname}` });
 }
