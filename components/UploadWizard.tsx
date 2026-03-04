@@ -5,6 +5,7 @@ import { compressImage } from '../utils/imageUtils';
 import CameraCapture from './CameraCapture';
 import CameraGuideDev from './CameraGuideDev';
 import StreakBadge from './StreakBadge';
+import TutorialScreen from './TutorialScreen';
 
 interface UploadWizardProps {
   onStartAnalysis: (images: UploadedImage[]) => void;
@@ -113,6 +114,12 @@ const ImageUploadSlot: React.FC<{
 
 const UploadWizard: React.FC<UploadWizardProps> = ({ onStartAnalysis, devMode, disabled, plan }) => {
   const [isSimpleMode, setIsSimpleMode] = useState(true);
+  const [showTutorial, setShowTutorial] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('TUTORIAL_SEEN') !== '1';
+    }
+    return false;
+  });
   const [images, setImages] = useState<Record<ImageSlot, UploadedImage | null>>({
     [ImageSlot.Front]: null,
     [ImageSlot.Left]: null,
@@ -209,6 +216,7 @@ const UploadWizard: React.FC<UploadWizardProps> = ({ onStartAnalysis, devMode, d
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 animate-fade-in relative">
+      {showTutorial && <TutorialScreen onClose={() => { setShowTutorial(false); localStorage.setItem('TUTORIAL_SEEN', '1'); }} />}
       {isCompressing && (
         <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-2xl">
           <div className="bg-black/70 text-white px-4 py-2 rounded-lg text-sm">画像を最適化中...</div>
