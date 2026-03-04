@@ -17,6 +17,13 @@ export default defineConfig(({ mode }) => {
   return {
     server: {
       host: '0.0.0.0',
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3500',
+          changeOrigin: true,
+          secure: false
+        }
+      }
     },
     plugins: [
       react(),

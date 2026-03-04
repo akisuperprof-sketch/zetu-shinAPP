@@ -1,4 +1,4 @@
-import { getStreakData } from './streak';
+import { getStreakData } from './streak.js';
 
 /**
  * Z-26 Share Card Utility (Harden v1.2)

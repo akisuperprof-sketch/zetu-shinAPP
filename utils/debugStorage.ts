@@ -1,4 +1,4 @@
-import { AnalysisV2Payload } from '../types';
+import { AnalysisV2Payload } from '../types.js';
 
 /**
  * 開発・分析用デバッグストレージ（Hardened v1）

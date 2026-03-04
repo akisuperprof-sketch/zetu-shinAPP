@@ -1,20 +1,20 @@
 
-import analyze from '../api-src/analyze';
-import research_debug from '../api-src/research_debug';
-import research from '../api-src/research';
-import token from '../api-src/token';
-import review_create from '../api-src/review/create';
-import review_submit from '../api-src/review/submit';
-import analyze_update_v2 from '../api-src/analyze/update_v2';
-import report_quality from '../api-src/report/quality';
-import report_qualityByImage from '../api-src/report/qualityByImage';
-import report_heatmapByRole from '../api-src/report/heatmapByRole';
-import report_summary from '../api-src/report/summary';
-import report_summaryByRole from '../api-src/report/summaryByRole';
-import report_confidence from '../api-src/report/confidence';
-import report_heatmap from '../api-src/report/heatmap';
-import save_observation from '../api-src/research/save_observation';
-import health from '../api-src/health';
+import analyze from '../api-src/analyze_service.js';
+import research_debug from '../api-src/research_debug.js';
+import research from '../api-src/research_service.js';
+import token from '../api-src/token.js';
+import review_create from '../api-src/review_ops/create.js';
+import review_submit from '../api-src/review_ops/submit.js';
+import analyze_update_v2 from '../api-src/analyze_ops/update_v2.js';
+import report_quality from '../api-src/report_ops/quality.js';
+import report_qualityByImage from '../api-src/report_ops/qualityByImage.js';
+import report_heatmapByRole from '../api-src/report_ops/heatmapByRole.js';
+import report_summary from '../api-src/report_ops/summary.js';
+import report_summaryByRole from '../api-src/report_ops/summaryByRole.js';
+import report_confidence from '../api-src/report_ops/confidence.js';
+import report_heatmap from '../api-src/report_ops/heatmap.js';
+import save_observation from '../api-src/research_ops/save_observation.js';
+import health from '../api-src/health_service.js';
 
 const handlers: Record<string, any> = {
     '/api/analyze': analyze,

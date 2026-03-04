@@ -31,6 +31,28 @@
 - 解析完了直後、画面右下に `RESEARCH: archived_ok` と表示されれば保存成功です。
 - `archived_failed` や `archived_error` の場合は、表示されるエラーメッセージから原因を特定します。
 
+---
+
+## 4. ローカル開発環境でのテスト手順 (Phase 1 完走用)
+フロントエンド (Vite) と API (api/index.ts) の両方をテストするには、`vercel dev` の利用を最優先します。
+
+### A. `vercel dev` による一括起動（推奨）
+1. ターミナルで `vercel dev --listen 3500` を実行します（Port 3500 を推奨）。
+2. 初回起動時はプロジェクトのリンクを求められる場合があります。
+3. `http://localhost:3500` にアクセスして `/api/health` が HTTP 200 を返すことを確認します。
+4. `/app?debug=1` を開き、診断フローを最後までテストします。
+
+### B. `npm run dev` + `vercel dev` の併用（Proxy経由）
+- `vite.config.ts` に `/api` の Proxy 設定（Target: 3500番など）が含まれているか確認します。
+- Vite (localhost:3000) からでも、`vercel dev` (localhost:3500) が別で動いていれば API 疎通が可能です。
+
+## 5. 「現在利用できません」発生時の切り分け
+- `?debug=1` を付与して画面最下部の [RETRY] ボタン または [Missing Envs] 表示を確認します。
+- `API_CHECK_FAILED: 404`: `vercel dev` または Proxy が正しく設定されていません。
+- `API_CHECK_FAILED: 500`: 環境変数（`GEMINI_API_KEY` 等）が読み込まれていません（`vercel dev` 起動時のログを確認）。
+- `RESEARCH: archived_failed`: 保存は失敗してもユーザー結果画面はブロッキングせず継続するのが正常な仕様です。
+エラーメッセージから原因を特定します。
+
 ### サーバー側（管理者・開発者向け）
 1. **Supabase Storage**:
    - `tongue-images` バケット内に `{anonId}/{yyyy-mm-dd}/{uuid}.jpg` が生成されているか確認。

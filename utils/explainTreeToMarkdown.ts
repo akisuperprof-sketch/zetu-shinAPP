@@ -1,4 +1,4 @@
-import { ExplainTreeNode } from './explainTree';
+import { ExplainTreeNode } from './explainTree.js';
 
 /**
  * 説明ツリーを Markdown 形式に変換する。

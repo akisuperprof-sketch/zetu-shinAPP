@@ -1,6 +1,6 @@
 
 import { createClient } from "@supabase/supabase-js";
-import { calculateMatchGrade } from "../../utils/matchGrader";
+import { calculateMatchGrade } from "../../utils/matchGrader.js";
 
 export default async function handler(req: any, res: any) {
     if (req.method !== 'GET') {

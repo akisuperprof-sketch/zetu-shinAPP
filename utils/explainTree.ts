@@ -1,5 +1,5 @@
-import { AnalysisV2Payload } from '../types';
-import { getConditionType } from './typeMapper';
+import { AnalysisV2Payload } from '../types.js';
+import { getConditionType } from './typeMapper.js';
 
 /**
  * Z-26 Explain Tree (Hardened v1.2)

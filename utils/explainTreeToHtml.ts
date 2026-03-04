@@ -1,4 +1,4 @@
-import { ExplainTreeNode } from './explainTree';
+import { ExplainTreeNode } from './explainTree.js';
 
 interface MetaData {
     build: string;

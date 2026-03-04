@@ -1,5 +1,5 @@
 
-import { PATTERN_GROUPS, getGroupId } from '../constants/patternGroups';
+import { PATTERN_GROUPS, getGroupId } from '../constants/patternGroups.js';
 
 export type MatchGrade = 'S' | 'A' | 'B' | 'C';
 

@@ -1,4 +1,4 @@
-import { isDevEnabled } from './devFlags';
+import { isDevEnabled } from './devFlags.js';
 
 export const DEBUG_MODE = typeof window !== 'undefined' ? isDevEnabled() : false;
 
