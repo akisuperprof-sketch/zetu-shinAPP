@@ -58,7 +58,7 @@ const UserInfoScreen: React.FC<UserInfoScreenProps> = ({ onNext }) => {
         weight,
         concerns,
         age_range: ageRange || undefined,
-        answers: devEnabled ? extraAnswers : undefined
+        answers: extraAnswers
       });
     }
   };

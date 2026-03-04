@@ -316,8 +316,20 @@ const App: React.FC = () => {
 
     try {
       setAnalysisError(null);
+
+      // If previously disabled, perform a just-in-time check before failing
       if (apiDisabled) {
-        throw new Error("SERVER_UNAVAILABLE: API Health Check failed. Please refresh.");
+        try {
+          const res = await fetch('/api/token', { method: 'POST' });
+          if (res.ok) {
+            setApiDisabled(false);
+            setApiError(null);
+          } else {
+            throw new Error("SERVER_UNAVAILABLE: API Health Check failed. Please refresh.");
+          }
+        } catch {
+          throw new Error("SERVER_UNAVAILABLE: API Health Check failed. Please refresh.");
+        }
       }
 
       const files = uploadedImages.map(img => img.file);
