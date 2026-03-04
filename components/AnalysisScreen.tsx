@@ -10,15 +10,17 @@ interface AnalysisErrorDetails {
 
 interface AnalysisScreenProps {
   error?: string | AnalysisErrorDetails | null;
+  retryCount?: number;
   onRetry?: () => void;
   onBack?: () => void;
 }
 
-const AnalysisScreen: React.FC<AnalysisScreenProps> = ({ error, onRetry, onBack }) => {
+const AnalysisScreen: React.FC<AnalysisScreenProps> = ({ error, retryCount = 0, onRetry, onBack }) => {
   const isDetailedError = error && typeof error === 'object';
   const displayMessage = isDetailedError ? (error as any).message_public : (error as string);
   const requestId = isDetailedError ? (error as any).requestId : null;
   const errorCode = isDetailedError ? (error as any).code : 'UNKNOWN';
+  const isMaxRetries = retryCount >= 3;
 
   if (error) {
     return (
@@ -34,6 +36,9 @@ const AnalysisScreen: React.FC<AnalysisScreenProps> = ({ error, onRetry, onBack 
           <p className="text-red-700 text-sm text-center font-bold mb-1">
             {displayMessage}
           </p>
+          {isMaxRetries && (
+            <p className="text-[10px] text-red-600/70 text-center mt-1">最大試行回数を超えました。</p>
+          )}
           {isDetailedError && (
             <div className="mt-3 pt-3 border-t border-red-200/50 flex flex-col items-center">
               <span className="text-[10px] font-mono text-red-400 bg-white px-2 py-0.5 rounded border border-red-100">
@@ -55,12 +60,21 @@ const AnalysisScreen: React.FC<AnalysisScreenProps> = ({ error, onRetry, onBack 
         </div>
 
         <div className="flex flex-col w-full max-w-xs space-y-3">
-          <button
-            onClick={onRetry}
-            className="w-full bg-red-600 text-white font-black py-4 rounded-xl hover:opacity-90 transition-all shadow-md active:scale-95"
-          >
-            再試行する
-          </button>
+          {!isMaxRetries ? (
+            <button
+              onClick={onRetry}
+              className="w-full bg-red-600 text-white font-black py-4 rounded-xl hover:opacity-90 transition-all shadow-md active:scale-95"
+            >
+              再試行する ({retryCount}/3)
+            </button>
+          ) : (
+            <button
+              onClick={() => window.open('mailto:support@example.com?subject=ZETUSHIN_Error_' + requestId)}
+              className="w-full bg-slate-800 text-white font-black py-4 rounded-xl hover:opacity-90 transition-all shadow-md active:scale-95"
+            >
+              サポートに報告する
+            </button>
+          )}
           <button
             onClick={onBack}
             className="w-full bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition-all text-sm"
@@ -70,8 +84,9 @@ const AnalysisScreen: React.FC<AnalysisScreenProps> = ({ error, onRetry, onBack 
         </div>
 
         <p className="mt-8 text-[10px] text-slate-400 text-center leading-relaxed">
-          ネットワーク接続を確認し、<br />問題が解決しない場合はRequestIdを添えてサポートへご連絡ください。
+          {isMaxRetries ? "複数回失敗しました。ネットワーク状況を確認の上、改善しない場合は上記のIDを添えてお問い合わせください。" : "ネットワーク接続を確認し、問題が解決しない場合はRequestIdを添えてサポートへご連絡ください。"}
         </p>
+
       </div>
     );
   }

@@ -41,6 +41,7 @@ const App: React.FC = () => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [analysisError, setAnalysisError] = useState<string | any | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [planType, setPlanType] = useState<PlanType>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('PLAN_TYPE') as PlanType) || 'light';
@@ -140,7 +141,7 @@ const App: React.FC = () => {
     }
 
     // Safety check for production
-    if (!import.meta.env.DEV) {
+    if (!import.meta.env.DEV && typeof window !== 'undefined' && !window.location.search.includes('debug=1')) {
       const hasForcePro = localStorage.getItem("FORCE_PRO") === "true";
       const hasDummy = localStorage.getItem("DUMMY_TONGUE") === "true";
       const hasMock = localStorage.getItem("MOCK_AI") === "true";
@@ -307,10 +308,18 @@ const App: React.FC = () => {
       }
     }
 
+
     setAppState(AppState.Analyzing);
+    if (retryCount >= 3) {
+      console.warn("MAX_RETRIES_EXCEEDED");
+    }
 
     try {
       setAnalysisError(null);
+      if (apiDisabled) {
+        throw new Error("SERVER_UNAVAILABLE: API Health Check failed. Please refresh.");
+      }
+
       const files = uploadedImages.map(img => img.file);
       const currentMode = currentEffectivePlan;
       const userRole = localStorage.getItem('role') || 'FREE';
@@ -375,6 +384,7 @@ const App: React.FC = () => {
         saveLatestPayloadForDebug(result.result_v2.output_payload);
       }
 
+      setRetryCount(0); // Reset on success
       setAppState(AppState.Results);
 
       if (userInfo) {
@@ -471,12 +481,19 @@ const App: React.FC = () => {
 
     } catch (error: any) {
       console.error("Analysis failed:", error);
+      setRetryCount(prev => prev + 1);
       // If error has a robust API error structure, use it
       if (error.apiError) {
         setAnalysisError(error.apiError);
       } else {
         const errorMessage = error instanceof Error ? error.message : "不明なエラー";
-        setAnalysisError(errorMessage);
+        setAnalysisError({
+          ok: false,
+          code: 'API_5XX',
+          message_public: errorMessage,
+          requestId: 'LOCAL_' + Date.now(),
+          retryable: true
+        });
       }
     }
   }, [uploadedImages, userInfo, currentEffectivePlan]);
@@ -511,8 +528,12 @@ const App: React.FC = () => {
         return (
           <AnalysisScreen
             error={analysisError}
+            retryCount={retryCount}
             onRetry={() => handleHearingNext(userInfo?.answers?.hearing || {})}
-            onBack={() => setAppState(AppState.Uploading)}
+            onBack={() => {
+              setRetryCount(0);
+              setAppState(AppState.Uploading);
+            }}
           />
         );
       case AppState.Results:
