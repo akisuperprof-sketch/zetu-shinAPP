@@ -7,3 +7,9 @@ interface ImportMetaEnv {
 interface ImportMeta {
     readonly env: ImportMetaEnv;
 }
+
+declare const __BUILD_INFO__: {
+    version: string;
+    sha: string;
+    env: string;
+};

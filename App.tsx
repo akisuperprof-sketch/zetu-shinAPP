@@ -627,13 +627,16 @@ const App: React.FC = () => {
         setAnalysisMode={setAnalysisMode}
       />
 
-      <footer className="w-full max-w-4xl mt-8 pb-4 text-center text-xs text-slate-500">
-        <p>本アプリは医療的な診断、治療、または助言を提供するものではありません。健康上の問題については、必ず医師または他の適切な医療従事者にご相談ください。</p>
-        <p className="mt-2 opacity-50">v1.2.1 {import.meta.env.DEV ? '(Development Build)' : ''}</p>
+      <footer className="w-full max-w-4xl mt-12 pb-8 text-center text-[10px] text-slate-400 px-6 leading-relaxed">
+        <p className="mb-3">本アプリは医療的な診断、治療、または助言を提供するものではありません。<br className="hidden sm:inline" />健康上の問題については、必ず医師または他の適切な医療従事者にご相談ください。</p>
+        <div className="font-mono opacity-50 flex flex-wrap justify-center items-center gap-x-3 gap-y-1">
+          <span>{__BUILD_INFO__.version}</span>
+          <span className="opacity-30">/</span>
+          <span>sha:{__BUILD_INFO__.sha}</span>
+          <span className="opacity-30">/</span>
+          <span className="uppercase">{__BUILD_INFO__.env}</span>
+        </div>
       </footer>
-      <div className="fixed bottom-2 right-2 text-[10px] font-mono text-slate-500 bg-white/80 px-2 py-1 rounded border border-slate-200 shadow-sm z-50 pointer-events-none">
-        BUILD: 2026.03.02.01
-      </div>
       <DevControlCenter />
       <DebugPanel plan={currentEffectivePlan} />
       {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1' && researchStatus && (
