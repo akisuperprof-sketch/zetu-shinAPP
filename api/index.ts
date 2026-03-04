@@ -46,12 +46,15 @@ export default async function handler(req: any, res: any) {
     const host = req.headers.host || 'localhost';
     const protocol = req.headers['x-forwarded-proto'] || 'http';
     const url = new URL(req.url, `${protocol}://${host}`);
-    let pathname = url.pathname;
 
-    // Normalize pathname (sometimes Vercel passes internal paths during rewrites)
-    if (pathname === '/api/index' || pathname === '/api') {
-        // Fallback or specific logic if needed, but usually the rewrites pass the original path
-    }
+    // Dispatching logic: 
+    // 1. Check if we received a route through query params (from vercel.json rewrite)
+    // 2. Otherwise fall back to the actual pathname
+    const routeParam = url.searchParams.get('_r');
+    let pathname = routeParam ? `/api/${routeParam}` : url.pathname;
+
+    // [Minimal Log] for tracking in Vercel logs
+    console.log(`[api:index] method=${req.method} path=${pathname} (originalUrl=${req.url}) type=${req.headers['content-type'] || 'none'} len=${req.headers['content-length'] || 0}`);
 
     const handlerFunc = handlers[pathname];
 
@@ -60,9 +63,18 @@ export default async function handler(req: any, res: any) {
             return await handlerFunc(req, res);
         } catch (error: any) {
             console.error(`Error in handler for ${pathname}:`, error);
-            return res.status(500).json({ error: 'Internal Server Error', details: error.message });
+            // Always return JSON error to avoid HTML 500 pages breaking client logic
+            return res.status(500).json({
+                error: 'Internal Server Error',
+                message: error.message,
+                path: pathname
+            });
         }
     }
 
-    return res.status(404).json({ error: `Not Found (Unified API Entry): ${pathname}` });
+    return res.status(404).json({
+        error: `Not Found (Unified API Entry): ${pathname}`,
+        url: req.url,
+        instruction: "Check vercel.json rewrites or api/index.ts handlers map."
+    });
 }

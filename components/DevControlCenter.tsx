@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ALL_FLAGS, setLatestDevFlags, clearAllDevFlags, FLAGS_LATEST_VERSION } from '../utils/featureFlags';
 import { ResearchDebugPanel } from './ResearchDebugPanel';
+import { isDevEnabled } from '../utils/devFlags';
 
 export const DevControlCenter: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -9,8 +10,8 @@ export const DevControlCenter: React.FC = () => {
     const [planType, setPlanType] = useState<string>('light');
     const [showToast, setShowToast] = useState(false);
 
-    // Only render in DEV
-    if (!import.meta.env.DEV || import.meta.env.MODE === 'production' || process.env.NODE_ENV === 'production') {
+    // Only render if dev/debug mode is enabled (manual ?debug=1 or storage flag)
+    if (typeof window === 'undefined' || !isDevEnabled()) {
         return null;
     }
 

@@ -8,17 +8,23 @@ const VERSION_KEY = 'SELECTED_VERSION';
 
 /**
  * 開発用機能が有効かどうかを判定する
- * 判定条件 (二重ロック):
- * 1. 環境変数 VITE_DEV_FEATURES_MASTER が "true" であること
- * 2. localStorage.getItem("DEV_FEATURES") が "true" であること
+ * 判定条件:
+ * 1. URL パラメータに ?debug=1 が含まれている (強制有効化 + localStorage 保存)
+ * 2. または、localStorage.getItem("DEV_FEATURES") が "true" であること
+ * 3. ただし、マスターロック (VITE_DEV_FEATURES_MASTER) が "true" でない場合の本番環境でも、
+ *    明示的なデバッグ操作 (?debug=1) が一度行われれば有効化を維持する。
  */
 export const isDevEnabled = (): boolean => {
     if (typeof window === 'undefined') return false;
 
-    // マスターロック: 本番環境等で環境変数がセットされていない場合は常に false
-    const masterFlag = import.meta.env.VITE_DEV_FEATURES_MASTER === 'true';
-    if (!masterFlag) return false;
+    // A. URLパラメータによる強制有効化パッチ
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('debug') === '1') {
+        localStorage.setItem(STORAGE_KEY, 'true');
+        return true;
+    }
 
+    // B. 保存されたフラグの確認
     return localStorage.getItem(STORAGE_KEY) === 'true';
 };
 

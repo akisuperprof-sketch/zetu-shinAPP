@@ -1,7 +1,6 @@
-// TODO: Remove DEBUG_MODE features before production release
-// 本番リリース前に必ず false に変更すること
+import { isDevEnabled } from './devFlags';
 
-export const DEBUG_MODE = true;
+export const DEBUG_MODE = typeof window !== 'undefined' ? isDevEnabled() : false;
 
 export const DEBUG_KEYS = {
     LAST_REQUEST: 'debug:lastRequest',

@@ -22,6 +22,16 @@ const QUIET_FUTURE_CSS = `
     50% { transform: translateY(-30px) translateX(15px); opacity: 0.2; }
   }
 
+  @keyframes orb-pulse {
+    0% { transform: scale(1); opacity: 0.5; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+    70% { transform: scale(1.5); opacity: 0; box-shadow: 0 0 0 20px rgba(52, 211, 153, 0); }
+    100% { transform: scale(1); opacity: 0; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+  }
+
+  .orb-glow {
+    box-shadow: 0 0 20px 5px rgba(52, 211, 153, 0.5);
+  }
+
   .particle {
     position: absolute;
     border-radius: 50%;
@@ -147,34 +157,57 @@ const QiMap: React.FC<{ currentTypeKey: string; onSelect: (key: string) => void 
   );
 };
 
-const XYMap: React.FC<{ x: number; y: number }> = ({ x, y }) => {
+const XYMap: React.FC<{ x: number; y: number; typeName: string }> = ({ x, y, typeName }) => {
   return (
-    <div className="relative w-full aspect-square max-w-[400px] mx-auto bg-slate-50/50 rounded-[4rem] p-12 overflow-hidden border border-slate-100 shadow-inner group">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-jade-400/5 blur-[80px] rounded-full transition-all duration-1000 group-hover:scale-125"></div>
-
-      <div className="absolute inset-0 flex items-center justify-center p-12 pointer-events-none">
-        <div className="w-full h-[1px] bg-slate-200/60 relative">
-          <span className="absolute left-0 -top-8 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">虚 (Deficiency)</span>
-          <span className="absolute right-0 -top-8 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">実 (Excess)</span>
-        </div>
-        <div className="h-full w-[1px] bg-slate-200/60 relative">
-          <span className="absolute top-0 -left-14 rotate-[-90deg] text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] origin-right">寒 (Cold)</span>
-          <span className="absolute bottom-0 -left-14 rotate-[-90deg] text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] origin-right">熱 (Heat)</span>
-        </div>
+    <div className="relative w-full aspect-square max-w-[400px] mx-auto bg-[#F8FAFC] rounded-[4rem] p-12 overflow-hidden border border-slate-200/60 shadow-[0_20px_50px_rgba(0,0,0,0.02)] group">
+      {/* Central Guide Labels */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
+        <div className="text-[10px] font-black text-slate-300/40 uppercase tracking-[0.4em] mb-1">あなたの現在地</div>
+        <div className="text-xl font-black text-slate-200 tracking-tighter uppercase">{typeName}</div>
       </div>
 
-      <div className="absolute top-1/2 left-1/2 -ml-1 -mt-1 w-2 h-2 bg-slate-300/40 rounded-full"></div>
+      {/* Grid Lines */}
+      <div className="absolute inset-0 flex items-center justify-center p-12 pointer-events-none opacity-40">
+        <div className="w-full h-[1px] bg-slate-300/50"></div>
+        <div className="h-full w-[1px] bg-slate-300/50 absolute left-1/2"></div>
+      </div>
 
+      {/* Axis Labels */}
+      <div className="absolute inset-0 p-6 pointer-events-none flex flex-col justify-between items-center z-10">
+        <div className="text-[11px] font-black text-slate-400 tracking-[0.2em] uppercase">虚 (Deficiency)</div>
+        <div className="w-full flex justify-between items-center px-2">
+          <div className="text-[11px] font-black text-slate-400 tracking-[0.2em] uppercase origin-center -rotate-90">寒 (Cold)</div>
+          <div className="text-[11px] font-black text-slate-400 tracking-[0.2em] uppercase origin-center rotate-90">熱 (Heat)</div>
+        </div>
+        <div className="text-[11px] font-black text-slate-400 tracking-[0.2em] uppercase">実 (Excess)</div>
+      </div>
+
+      {/* Quadrant Soft Labels */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03] font-black text-lg tracking-[0.5em] text-slate-900 flex flex-wrap content-between p-16">
+        <div className="w-1/2 text-left">虚寒</div>
+        <div className="w-1/2 text-right">実寒</div>
+        <div className="w-1/2 text-left self-end">虚熱</div>
+        <div className="w-1/2 text-right self-end">実熱</div>
+      </div>
+
+      {/* Glowing Orb Animation Wrapper */}
       <div
-        className="absolute w-8 h-8 -ml-4 -mt-4 bg-white rounded-full shadow-[0_12px_32px_rgba(20,184,166,0.3)] flex items-center justify-center transition-all duration-1000 ease-out z-10"
+        className="absolute w-10 h-10 -ml-5 -mt-5 transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] z-30"
         style={{ left: `${50 + (x * 40)}%`, top: `${50 + (y * 40)}%` }}
       >
-        <div className="w-5 h-5 bg-jade-500 rounded-full border-2 border-white"></div>
-        <div className="absolute inset-0 bg-jade-400 rounded-full animate-ping opacity-20 scale-150"></div>
-      </div>
+        <div className="relative w-full h-full flex items-center justify-center">
+          {/* Main Glowing Center */}
+          <div className="w-4 h-4 bg-jade-400 rounded-full border-[3px] border-white shadow-[0_0_20px_rgba(52,211,153,0.6)] orb-glow"></div>
 
-      <div className="absolute bottom-6 left-0 right-0 text-center">
-        <p className="text-[10px] font-black text-slate-300 tracking-[0.3em] uppercase">Constitutional Map</p>
+          {/* Pulse Ripple Effect */}
+          <div className="absolute inset-0 bg-jade-400 rounded-full" style={{ animation: 'orb-pulse 2s infinite ease-out' }}></div>
+          <div className="absolute inset-0 bg-jade-400 rounded-full scale-125 opacity-10"></div>
+
+          {/* Label Tooltip */}
+          <div className="absolute bottom-full mb-4 px-4 py-2 bg-slate-900 text-white rounded-2xl text-[10px] font-black whitespace-nowrap shadow-2xl animate-fade-in-up">
+            NOW: {typeName}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -200,6 +233,7 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
   const conditionType = getConditionType(v2?.diagnosis.top1_id || result.top3?.[0]?.id || null);
   const streak = getStreakData();
   const celebrateMsg = getCelebrateMessage(streak.streakDays);
+  // @ts-ignore
   const v2Incomplete = !!v2 && (!v2.diagnosis.top1_id || v2.diagnosis.top3_ids.length === 0);
   const dataPathUsed = v2 ? "V2" : (result.guard ? "LEGACY" : "NONE");
 
@@ -210,10 +244,11 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
   const isHistoryMiniEnabled = typeof window !== 'undefined' && localStorage.getItem('FF_HISTORY_MINI_V1') === '1';
   const historyMini = isHistoryMiniEnabled ? getHistoryMini() : [];
 
+  const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'visual' | 'history'>('overview');
+  // @ts-ignore
   const [selectedGridKey, setSelectedGridKey] = useState<string | null>(null);
 
   const concerningFindings = findings.filter(f => f.riskLevel === RiskLevel.Red || f.riskLevel === RiskLevel.Yellow);
-  const healthyFindings = findings.filter(f => f.riskLevel === RiskLevel.Green);
 
   const handleShareCard = async () => {
     try {
@@ -235,244 +270,175 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
     }
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText("https://app.tongue-ai.com/");
-    alert("招待リンクをコピーしました");
-  };
-
   return (
     <div className="animate-fade-in font-noto bg-white pb-32">
       <style dangerouslySetInnerHTML={{ __html: QUIET_FUTURE_CSS }} />
 
-      {/* 🎰 Streak Celebration */}
-      {((streak.active && streak.streakDays > 0) || (isPhase1StoryEnabled && story?.hookLine)) && (
-        <div className="flex flex-col items-center pt-16 mb-16">
-          {streak.active && streak.streakDays > 0 && <StreakBadge className="scale-125 border-slate-50 shadow-sm" />}
-          <div className="mt-8 px-10 py-4 bg-slate-50 border border-slate-100 text-slate-500 font-bold rounded-full text-[10px] tracking-[0.3em] uppercase animate-fade-in-up flex items-center gap-3">
-            <span className="w-2 h-2 bg-jade-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.4)]"></span> {celebrateMsg || story?.hookLine}
+      {/* 📡 Hero Section: Enhanced XY Map as Protagonist */}
+      <div className="max-w-4xl mx-auto px-6 py-20 flex flex-col items-center">
+        <div className="w-full flex flex-col items-center">
+          <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-slate-50 border border-slate-100 mb-12 shadow-sm">
+            <span className="w-2 h-2 bg-jade-400 rounded-full animate-pulse"></span>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Constitution Mapping</span>
           </div>
-        </div>
-      )}
 
-      {/* � App Showcase (3 Mockups) */}
-      <div className="max-w-4xl mx-auto px-6 mb-24 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-        <div className="mb-12 text-center">
-          <h3 className="text-[11px] font-black text-slate-400 tracking-[0.5em] uppercase mb-4">Observation Flow</h3>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">日々の観測プロセス</h2>
-        </div>
+          <XYMap x={-(axes.xuShi / 100) * 0.8} y={-(axes.heatCold / 100) * 0.8} typeName={conditionType.name} />
 
-        <div className="flex gap-6 overflow-x-auto pb-8 snap-x no-scrollbar">
-          {/* Mock 1 */}
-          <div className="flex-shrink-0 w-[240px] md:w-[280px] snap-center">
-            <img src="/assets/mock-1.png" alt="Capture Experience" className="w-full rounded-[2rem] border border-slate-100 shadow-[0_12px_40px_rgba(17,28,46,0.05)] mb-6" />
-            <div className="text-center">
-              <h4 className="text-sm font-black text-slate-800 mb-2">1. スムーズな観測</h4>
-              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">ガイドに合わせるだけで、<br />安定した解析用の画像を自動記録。</p>
-            </div>
-          </div>
-          {/* Mock 2 */}
-          <div className="flex-shrink-0 w-[240px] md:w-[280px] snap-center">
-            <img src="/assets/mock-2.png" alt="Hearing Experience" className="w-full rounded-[2rem] border border-slate-100 shadow-[0_12px_40px_rgba(17,28,46,0.05)] mb-6" />
-            <div className="text-center">
-              <h4 className="text-sm font-black text-slate-800 mb-2">2. ストレスフリーな問診</h4>
-              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">30秒で終わる直感的なタップUI。<br />日々の揺らぎを正確に拾い上げます。</p>
-            </div>
-          </div>
-          {/* Mock 3 */}
-          <div className="flex-shrink-0 w-[240px] md:w-[280px] snap-center">
-            <img src="/assets/mock-3.png" alt="Results Experience" className="w-full rounded-[2rem] border border-slate-100 shadow-[0_12px_40px_rgba(17,28,46,0.05)] mb-6" />
-            <div className="text-center">
-              <h4 className="text-sm font-black text-slate-800 mb-2">3. 解析とセルフケア</h4>
-              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">研究データから導かれた傾向と、<br />具体的な改善アクションを提案。</p>
-            </div>
+          <div className="mt-12 text-center">
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.4em] mb-4">推定体質タイプ</p>
+            <h2 className="text-[48px] font-black tracking-tighter leading-tight text-slate-900">
+              {conditionType.name}
+            </h2>
+            <p className="mt-6 text-slate-500 font-medium max-w-md mx-auto leading-relaxed text-sm">
+              {isPhase1StoryEnabled && story ? story.subLine : conditionType.description.split('。')[0] + '。'}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* �📡 Hero Section: Qi Map */}
-      <div className="max-w-4xl mx-auto px-6 mb-24">
-        <div className="bg-[#111C2E] rounded-[4rem] p-10 sm:p-24 text-white shadow-2xl relative overflow-hidden flex flex-col items-center border border-white/5">
-          <ParticleBg />
-
-          <div className="relative z-10 flex flex-col items-center w-full">
-            <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-16 transition-all hover:bg-white/10">
-              <span className="w-2 h-2 bg-jade-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.6)]"></span>
-              <span className="text-[10px] font-black text-blue-100/60 uppercase tracking-[0.5em]">Observation Rendering</span>
-            </div>
-
-            <QiMap currentTypeKey={conditionType.key} onSelect={(key) => setSelectedGridKey(key)} />
-
-            <div className="mt-20 text-center space-y-6">
-              <p className="text-blue-300/30 text-[11px] font-black uppercase tracking-[0.6em]">推定体質タイプ</p>
-              <h2 className="text-7xl sm:text-9xl font-black tracking-tighter leading-none text-white drop-shadow-2xl">
-                {conditionType.name}
-              </h2>
-              <div className="w-16 h-1 bg-jade-500/20 rounded-full mx-auto mt-12 shadow-[0_0_20px_rgba(52,211,153,0.2)]"></div>
-            </div>
-
-            <div className="mt-16 max-w-xl px-4">
-              <p className="text-lg sm:text-xl text-blue-100/60 font-medium leading-[2] text-center tracking-tight">
-                {isPhase1StoryEnabled && story ? story.subLine : conditionType.description.split('。')[0] + '。'}
-              </p>
-            </div>
-
-            <div className="mt-20 w-full bg-white/5 backdrop-blur-2xl rounded-[3rem] p-10 text-left border border-white/10 shadow-2xl">
-              <div className="flex items-center gap-5 mb-8">
-                <div className="p-4 bg-jade-500/10 rounded-[1.5rem] border border-jade-500/20">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-jade-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-jade-400/80 uppercase tracking-[0.4em] mb-1">Observation Tip</p>
-                  <h4 className="text-xl font-black text-white tracking-tight">セルフケアの指針</h4>
-                </div>
-              </div>
-              <p className="text-blue-100/70 text-base sm:text-lg leading-relaxed font-normal">
-                {conditionType.description.split('。')[1]}
-              </p>
-            </div>
-          </div>
+      {/* 📑 Tab Navigation */}
+      <div className="max-w-4xl mx-auto px-6 mb-20 sticky top-6 z-40">
+        <div className="bg-white/90 backdrop-blur-2xl rounded-3xl p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-slate-100 flex overflow-hidden">
+          {[
+            { id: 'overview', label: '分析概要' },
+            { id: 'visual', label: '画像解析' },
+            { id: 'history', label: '経過履歴' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex-1 py-4 px-2 rounded-2xl text-[12px] font-black tracking-widest transition-all duration-300 ${activeTab === tab.id
+                ? 'bg-slate-900 text-white shadow-lg'
+                : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* 🧩 Selective Insight & Detailed Analysis (SSoT) */}
-      {(selectedGridKey || v2) && (
-        <div className="max-w-4xl mx-auto px-6 mb-24 animate-fade-in-up">
-          <div className="p-10 sm:p-14 bg-slate-50 border border-slate-100 rounded-[3.5rem] shadow-sm relative overflow-hidden group">
-            <div className="absolute -top-10 -right-10 opacity-5 group-hover:opacity-10 transition-all duration-700 group-hover:scale-125 group-hover:rotate-12 pointer-events-none">
-              <span className="text-[12rem]">🧩</span>
-            </div>
-
-            <div className="flex justify-between items-start mb-12">
-              <div className="space-y-1">
-                <h4 className="text-[11px] font-black text-slate-300 uppercase tracking-[0.5em] flex items-center gap-4">
-                  <span className="w-2.5 h-2.5 bg-jade-400 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.3)]"></span> Selective Insight
-                </h4>
-                <div className="text-3xl font-black text-slate-900 tracking-tight">証の詳細分析</div>
-              </div>
-              {v2 && (
-                <div className="px-5 py-2 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-300 tracking-[0.2em] uppercase">
-                  Log: {v2.output_version}
+      {/* 🧩 Tab Content: Spaced for clarity */}
+      <div className="max-w-4xl mx-auto px-6 min-h-[400px]">
+        {activeTab === 'overview' && (
+          <div className="animate-fade-in-up space-y-20">
+            {/* 🎰 Streak / Hook Section */}
+            {((streak.active && streak.streakDays > 0) || (isPhase1StoryEnabled && story?.hookLine)) && (
+              <div className="flex flex-col items-center bg-slate-50 rounded-[3rem] p-10 border border-slate-100/60 shadow-inner">
+                {streak.active && streak.streakDays > 0 && <StreakBadge className="scale-110 mb-6" />}
+                <div className="px-8 py-3 bg-white border border-slate-100 text-slate-900 font-black rounded-full text-[10px] tracking-[0.2em] uppercase flex items-center gap-3 shadow-sm">
+                  <span className="w-1.5 h-1.5 bg-jade-400 rounded-full"></span> {celebrateMsg || story?.hookLine}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Pattern Analysis Branding */}
-            <div className="flex flex-col md:flex-row gap-12 items-center">
-              <div className="w-full md:w-1/3 flex flex-col items-center justify-center p-10 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm text-center">
-                <span className="text-[10px] text-jade-500 font-bold mb-3 uppercase tracking-widest">【 主証判定 】</span>
-                <span className="text-3xl font-black text-slate-800 leading-tight">
-                  {v2?.guard.primaryPatternName || result.top3?.[0]?.name || "特定中"}
-                </span>
+            {/* Observation Detail */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+              <div className="bg-[#F8FAFC] rounded-[3rem] p-10 border border-slate-100">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-10 h-10 flex items-center justify-center bg-white rounded-2xl shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-jade-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Expert Guide</p>
+                    <h4 className="text-xl font-black text-slate-900">セルフケアの指針</h4>
+                  </div>
+                </div>
+                <p className="text-slate-600 leading-[1.8] font-medium text-[15px]">
+                  {conditionType.description.split('。')[1]}
+                </p>
               </div>
 
-              <div className="flex-1 space-y-8">
-                <div className="p-8 bg-white/40 rounded-[2rem] border border-white border-l-8 border-l-jade-400 shadow-sm">
-                  <h4 className="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest">Observation Message</h4>
-                  <p className="text-lg text-slate-700 leading-relaxed font-medium">
-                    「{v2?.guard.message || result.guard?.message || "身体のバランスを整えましょう。"}」
-                  </p>
-                </div>
-
-                {/* Top 3 Patterns (Pro only) */}
-                {isPro && v2 && v2.diagnosis.top3_ids.length > 0 && (
-                  <div className="space-y-4">
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">併存パターン（Top 3）</h4>
-                    <div className="grid grid-cols-1 gap-3">
-                      {result.top3?.filter(p => v2.diagnosis.top3_ids.includes(p.id)).map((p, idx) => (
-                        <div key={p.id} className="px-6 py-4 bg-white/50 rounded-2xl border border-slate-100 flex justify-between items-center group/item hover:border-jade-200 transition-colors">
-                          <span className="font-bold text-slate-700">{idx + 1}. {p.name}</span>
-                          <span className="text-[10px] font-black text-slate-300 group-hover/item:text-jade-400 transition-colors">Score: {p.score}</span>
-                        </div>
-                      ))}
+              <div className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden h-full">
+                <div className="relative z-10">
+                  <p className="text-[10px] font-black text-blue-300/40 uppercase tracking-[0.4em] mb-8">Selective Insight</p>
+                  <div className="space-y-8">
+                    <div>
+                      <span className="text-[10px] text-jade-400 font-black mb-2 block uppercase tracking-widest opacity-60">【 主証判定 】</span>
+                      <span className="text-2xl font-black text-white leading-tight block">
+                        {v2?.guard.primaryPatternName || result.top3?.[0]?.name || "特定中"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black text-blue-300/40 mb-2 block uppercase tracking-widest">Message</span>
+                      <p className="text-[15px] text-slate-300 leading-relaxed font-medium">
+                        「{v2?.guard.message || result.guard?.message || "身体のバランスを整えましょう。"}」
+                      </p>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
+          </div>
+        )}
 
-            {/* Disclaimer */}
-            <div className="mt-12 pt-10 border-t border-slate-100">
-              <p className="text-[11px] text-slate-400/60 leading-relaxed font-medium italic">
-                ※本結果は研究データ（Phase 1）に基づく推定体質傾向です。医学的な診断や病気の特定を目的としたものではありません。
-              </p>
+        {activeTab === 'visual' && (
+          <div className="animate-fade-in-up space-y-12">
+            <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-sm">
+              <div className="text-center mb-12">
+                <h3 className="text-[10px] font-black text-slate-400 tracking-[0.5em] uppercase mb-3">Visual Analysis</h3>
+                <div className="text-3xl font-black text-slate-900 tracking-tight">舌の微細解析</div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {uploadedImages.map((url, idx) => (
+                  <HeatmapCanvas key={idx} imageUrl={url.previewUrl} findings={concerningFindings.map(f => f.name)} />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 📊 XY Map */}
-      <div className="max-w-4xl mx-auto px-6 mb-24">
-        <div className="bg-white rounded-[4rem] p-12 sm:p-20 border border-slate-100 shadow-[0_32px_120px_rgba(0,0,0,0.02)] animate-fade-in-up">
-          <div className="flex flex-col md:flex-row gap-12 items-center mb-16">
-            <div className="flex-1 text-center md:text-left space-y-2">
-              <h3 className="text-[11px] font-black text-slate-400 flex items-center tracking-[0.4em] uppercase justify-center md:justify-start">
-                <span className="w-2 h-2 bg-jade-400 mr-4 rounded-full"></span>
-                Constitutional XY Map
-              </h3>
-              <div className="text-3xl font-black text-slate-900 tracking-tight">体質傾向の座標観測</div>
-              <p className="text-sm text-slate-400 font-medium">虚実と寒熱のバランスを視覚化します</p>
-            </div>
-          </div>
-          <XYMap x={-(axes.xuShi / 100) * 0.8} y={-(axes.heatCold / 100) * 0.8} />
-        </div>
-      </div>
-
-      {/* 📸 Photos & Heatmap */}
-      <div className="max-w-4xl mx-auto px-6 mb-24">
-        <div className="bg-white rounded-[4rem] p-12 sm:p-20 border border-slate-100 shadow-[0_32px_120px_rgba(0,0,0,0.02)] animate-fade-in-up">
-          <div className="mb-16 space-y-2 text-center">
-            <h3 className="text-[11px] font-black text-slate-400 tracking-[0.4em] uppercase">Visual Analysis</h3>
-            <div className="text-3xl font-black text-slate-900 tracking-tight">舌の微細解析（Photo Heatmap）</div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {uploadedImages.map((url, idx) => (
-              <HeatmapCanvas key={idx} imageUrl={url.previewUrl} findings={concerningFindings.map(f => f.name)} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* � History Mini (Quiet Future style) */}
-      {isHistoryMiniEnabled && historyMini.length > 0 && (
-        <div className="max-w-4xl mx-auto px-6 mb-24 animate-fade-in-up">
-          <h3 className="text-[11px] font-black text-slate-400 tracking-[0.5em] uppercase text-center mb-12">Observation History</h3>
-          <div className="flex gap-6 overflow-x-auto pb-8 snap-x no-scrollbar">
-            {historyMini.map((h, i) => {
-              const delta = i < historyMini.length - 1 ? getDelta(h.score, historyMini[i + 1].score) : '→';
-              const date = new Date(h.ts);
-              return (
-                <div key={i} className={`flex-shrink-0 w-48 p-8 rounded-[2.5rem] border snap-center transition-all ${i === 0 ? 'bg-white border-jade-200 shadow-lg' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
-                  <div className="flex justify-between items-center mb-6">
-                    <span className="text-[10px] font-bold text-slate-300">{`${date.getMonth() + 1}/${date.getDate()}`}</span>
-                    {i === 0 && <span className="w-2 h-2 bg-jade-400 rounded-full animate-pulse"></span>}
-                  </div>
-                  <div className="text-lg font-black text-slate-800 mb-2 truncate">{h.typeLabel}</div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-brand-primary">{h.score}</span>
-                    <span className={`text-xs font-black ${delta === '↑' ? 'text-jade-500' : delta === '↓' ? 'text-red-500' : 'text-slate-300'}`}>{delta}</span>
-                  </div>
+        {activeTab === 'history' && (
+          <div className="animate-fade-in-up space-y-12">
+            {historyMini.length > 0 ? (
+              <div className="bg-slate-50 rounded-[3rem] p-12 border border-slate-100">
+                <div className="text-center mb-12">
+                  <h3 className="text-[10px] font-black text-slate-400 tracking-[0.5em] uppercase mb-3">Observation History</h3>
+                  <div className="text-3xl font-black text-slate-900 tracking-tight">観測の軌跡</div>
                 </div>
-              );
-            })}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                  {historyMini.map((h, i) => {
+                    const delta = i < historyMini.length - 1 ? getDelta(h.score, historyMini[i + 1].score) : '→';
+                    const date = new Date(h.ts);
+                    return (
+                      <div key={i} className={`p-8 rounded-[2.5rem] bg-white border transition-all duration-500 ${i === 0 ? 'border-jade-200 shadow-xl' : 'border-slate-100 opacity-60'}`}>
+                        <div className="flex justify-between items-center mb-6">
+                          <span className="text-[9px] font-black text-slate-300">{`${date.getMonth() + 1}/${date.getDate()}`}</span>
+                        </div>
+                        <div className="text-sm font-black text-slate-900 mb-2 truncate">{h.typeLabel}</div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-black text-slate-900 tracking-tighter">{h.score}</span>
+                          <span className={`text-[12px] font-black ${delta === '↑' ? 'text-jade-500' : delta === '↓' ? 'text-red-500' : 'text-slate-300'}`}>{delta}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="p-20 text-center text-slate-400 font-medium">
+                解析履歴がまだありません。
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* 📲 Actions */}
-      <div className="max-w-xl mx-auto px-6 flex flex-col gap-6">
-        <button onClick={handleShareCard} className="w-full bg-slate-900 text-white font-black py-6 px-10 rounded-[2.5rem] shadow-2xl hover:bg-slate-800 transition-all active:scale-[0.98]">
-          観測結果を保存する
+      {/* 📲 Actions: 80px space from content */}
+      <div className="max-w-xl mx-auto px-6 mt-20 flex flex-col gap-6">
+        <button onClick={handleShareCard} className="w-full bg-slate-900 text-white font-black py-6 px-10 rounded-3xl shadow-2xl hover:bg-black transition-all active:scale-[0.98] text-sm tracking-widest uppercase">
+          カードを保存して共有
         </button>
-        <button onClick={onRestart} className="w-full text-slate-400 font-black text-[10px] uppercase tracking-[0.4em]">
-          ← RETURN TO EXPERIMENT
+        <button onClick={onRestart} className="w-full text-slate-400 font-black text-[10px] uppercase tracking-[0.4em] hover:text-slate-900 transition-colors">
+          ← START NEW SESSION
         </button>
       </div>
 
       {/* 🧪 Debug */}
       {import.meta.env.DEV && (
-        <div className="mt-32 max-w-lg mx-auto p-4 bg-slate-50 border border-slate-100 rounded-3xl text-[9px] font-mono text-slate-400">
+        <div className="mt-32 max-w-lg mx-auto p-6 bg-slate-50/50 border border-slate-100 rounded-[2rem] text-[9px] font-mono text-slate-300 text-center">
           SsoT Path: {dataPathUsed} | Version: {v2?.output_version || "LEGACY"}
         </div>
       )}

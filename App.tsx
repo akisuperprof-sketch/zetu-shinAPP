@@ -59,7 +59,7 @@ const App: React.FC = () => {
 
   // Force Pro Mode from localStorage (DEV ONLY)
   const isForcedPro = React.useMemo(() => {
-    if (!import.meta.env.DEV) return false;
+    if (!isDevEnabled()) return false;
     return localStorage.getItem("FORCE_PRO") === "true";
   }, []);
 
