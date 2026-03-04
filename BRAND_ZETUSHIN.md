@@ -53,5 +53,17 @@ Phase 4 を見据え、気・血・水のデータを内部的に保持可能と
 ```
 
 ---
-**Status**: Phase 1 Implementation Complete (v1.2 Specification)
-**Last Updated**: 2026-03-04
+**Status**: Research Data Logging (Step 1) Implementation Complete (v1.3)
+**Last Updated**: 2026-03-04 (Antigravity v1.3)
+
+## 7. 将来ロードマップ詳細 (Future Roadmap Details)
+
+### Phase 3：コンディション軌跡 (Condition Trajectory)
+- **内容**: 過去の診断結果（X, Y座標）を線で結び、体調の変化を可視化する。
+- **目的**: 季節や生活習慣によるコンディションの揺らぎをユーザー自身が把握できるようにする。
+- **UI**: XYマップ上に薄いグレーの線で過去1週間の動きを表示。
+
+### Phase 4：気血水コンディションリング (Qi-Blood-Water Rings)
+- **内容**: 気・血・水の充実度を3本のリングで表現する（Apple Watchのアクティビティリング形式）。
+- **目的**: 漢方医学の根幹である「気血水」の状態を直感的に「満ちているか、欠けているか」で理解させる。
+- **データ源**: 舌診解析の内部スコア（qi, blood, water）を反映。

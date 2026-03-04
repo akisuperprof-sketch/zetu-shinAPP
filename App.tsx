@@ -349,65 +349,69 @@ const App: React.FC = () => {
       // Hard Guard 1: Runtime/Build-time environment check
       const isDevEnv = import.meta.env.DEV || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
 
-      if (isDevEnv) {
-        const isResearchModeEnabled = typeof window !== 'undefined' && localStorage.getItem('IS_RESEARCH_MODE') === 'true';
-        const isAgreed = typeof window !== 'undefined' && localStorage.getItem('RESEARCH_AGREED') === 'true';
-        const payload = result.result_v2?.output_payload;
+      // --- [RESEARCH ASSET LOGGING] ---
+      const isResearchAgreed = typeof window !== 'undefined' && localStorage.getItem('RESEARCH_AGREED') === 'true';
+      const payload = result.result_v2?.output_payload;
 
-        if (isResearchModeEnabled && isAgreed && payload) {
-          const doResearchLog = async () => {
+      if (isResearchAgreed && payload) {
+        const doObservationLog = async () => {
+          try {
+            const { getAnonymousUserId } = await import('./utils/anonymousId');
+            const { extractImageFeatures } = await import('./services/features/imageFeatures');
+
+            const anonId = getAnonymousUserId();
+            const frontImage = uploadedImages.find(img => img.slot === '正面');
+            if (!frontImage) return;
+
+            // 1. 特徴抽出 (Step1) - 失敗しても止めない
+            let features = null;
             try {
-              // Deduplication Guard: Prevent double-send for the same result within 60s
-              const resultHash = `${payload.diagnosis.top1_id}_${payload.guard.level}_${Math.floor(Date.now() / 60000)}`;
-              const lastSentHash = sessionStorage.getItem('z26_research_last_sent_hash');
-
-              if (lastSentHash === resultHash || sentResearchHashes.current.has(resultHash)) {
-                return;
-              }
-
-              // Mark as sent immediately (both in Ref and Storage)
-              sentResearchHashes.current.add(resultHash);
-              sessionStorage.setItem('z26_research_last_sent_hash', resultHash);
-
-              const { getAnonymousUserId } = await import('./utils/anonymousId');
-              const anonId = getAnonymousUserId();
-
-              // 1. Get Token securely
-              const tokenRes = await fetch('/api/token', { method: 'POST' });
-              if (!tokenRes.ok) {
-                // If token fails, maybe allow retry? For now, just clear hash if we really want to retry, 
-                // but let's just keep it simple.
-                return;
-              }
-              const { token } = await tokenRes.json();
-
-              // 2. Safe non-blocking fetch
-              await fetch('/api/research', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                  anonymous_user_id: anonId,
-                  top1_id: payload.diagnosis.top1_id,
-                  level: payload.guard.level,
-                  current_type_label: payload.guard.band,
-                  is_dummy: localStorage.getItem('DUMMY_TONGUE') === 'true',
-                  app_version: '1.2.1',
-                  output_version: payload.output_version,
-                  age_range: userInfo?.age_range || null,
-                  payload: payload
-                })
-              });
-            } catch (err) {
-              console.error('Research logging failed silently:', err);
+              features = await extractImageFeatures(frontImage.file);
+            } catch (e) {
+              console.warn("Feature extraction failed, continuing without it.", e);
             }
-          };
-          doResearchLog();
-        }
+
+            // 2. 画像のBase64化
+            const imageBase64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+              reader.readAsDataURL(frontImage.file);
+            });
+
+            // 3. トークン取得
+            const tokenRes = await fetch('/api/token', { method: 'POST' });
+            if (!tokenRes.ok) return;
+            const { token } = await tokenRes.json();
+
+            // 4. データ送信 (非同期・非ブロッキング)
+            fetch('/api/research/save_observation', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                anonymous_user_id: anonId,
+                image_base64: imageBase64,
+                image_mime_type: frontImage.file.type,
+                diagnosis: {
+                  type: payload.diagnosis.top1_id,
+                  score: 100, // Phase1 暫定
+                  x: payload.axes?.xuShi ?? 0,
+                  y: payload.axes?.heatCold ?? 0
+                },
+                features: features,
+                is_dummy: localStorage.getItem('DUMMY_TONGUE') === 'true'
+              })
+            }).catch(err => console.error("Save observation failed:", err));
+
+          } catch (err) {
+            console.error('Observation archiving failed silently:', err);
+          }
+        };
+        doObservationLog();
       }
-      // --- END RESEARCH MODE ---
+      // --- END RESEARCH ASSET LOGGING ---
 
     } catch (error) {
       console.error("Analysis failed:", error);
