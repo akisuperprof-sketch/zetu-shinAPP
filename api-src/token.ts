@@ -15,6 +15,7 @@ export default async function handler(req: any, res: any) {
 
     const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
     const now = Date.now();
+    const requestId = req.headers['x-request-id'] || `req_tok_${now}_${Math.random().toString(16).slice(2, 6)}`;
 
     // Rates: Max 10 requests per 1 minute per IP (allowing for dictionary lookups etc)
     const windowMs = 60 * 1000;
@@ -22,7 +23,13 @@ export default async function handler(req: any, res: any) {
     const validTimestamps = timestamps.filter((t: number) => now - t < windowMs);
 
     if (validTimestamps.length >= 10) {
-        return res.status(429).json({ error: 'Too Many Requests from this IP. Please try again later.' });
+        return res.status(429).json({
+            ok: false,
+            requestId,
+            code: 'API_4XX',
+            message_public: 'リクエストが多すぎます。しばらく待ってから再試行してください。',
+            retryable: true
+        });
     }
 
     validTimestamps.push(now);
@@ -34,7 +41,13 @@ export default async function handler(req: any, res: any) {
 
     // Create short-lived token
     const secret = process.env.INTERNAL_API_KEY;
-    if (!secret) return res.status(500).json({ error: 'Server Config Error' });
+    if (!secret) return res.status(500).json({
+        ok: false,
+        requestId,
+        code: 'API_5XX',
+        message_public: 'Server Config Error',
+        retryable: false
+    });
 
     const expiry = now + 5 * 60 * 1000; // 5 minutes
     const jti = crypto.randomBytes(8).toString('hex');

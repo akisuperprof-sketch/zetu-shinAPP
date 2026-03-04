@@ -40,7 +40,7 @@ const App: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<DiagnosisResult | null>(null);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | any | null>(null);
   const [planType, setPlanType] = useState<PlanType>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('PLAN_TYPE') as PlanType) || 'light';
@@ -469,10 +469,15 @@ const App: React.FC = () => {
       }
       // --- END RESEARCH ASSET LOGGING ---
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Analysis failed:", error);
-      const errorMessage = error instanceof Error ? error.message : "不明なエラー";
-      setAnalysisError(errorMessage);
+      // If error has a robust API error structure, use it
+      if (error.apiError) {
+        setAnalysisError(error.apiError);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : "不明なエラー";
+        setAnalysisError(errorMessage);
+      }
     }
   }, [uploadedImages, userInfo, currentEffectivePlan]);
 
@@ -507,6 +512,7 @@ const App: React.FC = () => {
           <AnalysisScreen
             error={analysisError}
             onRetry={() => handleHearingNext(userInfo?.answers?.hearing || {})}
+            onBack={() => setAppState(AppState.Uploading)}
           />
         );
       case AppState.Results:

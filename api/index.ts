@@ -36,35 +36,38 @@ const handlers: Record<string, any> = {
 };
 
 export default async function handler(req: any, res: any) {
+    const startTime = Date.now();
+
     // Standard CORS headers
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, x-request-id');
 
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
 
+    // Capture Request ID
+    const requestId = req.headers['x-request-id'] || `req_${startTime}_${Math.random().toString(16).slice(2, 10)}`;
+    res.setHeader('x-request-id', requestId);
+
     const host = req.headers.host || 'localhost';
     const protocol = req.headers['x-forwarded-proto'] || 'http';
     const url = new URL(req.url, `${protocol}://${host}`);
 
-    // Dispatching logic: 
-    // 1. Check if we received a route through query params (from vercel.json rewrite)
-    // 2. Otherwise fall back to the actual pathname
+    // Dispatching logic
     const routeParam = url.searchParams.get('_r');
     let pathname = routeParam ? `/api/${routeParam}` : url.pathname;
 
-    // [Minimal Log] for tracking in Vercel logs
-    console.log(`[api:index] START method=${req.method} path=${pathname}`);
+    console.log(`[api:index] START id=${requestId} method=${req.method} path=${pathname}`);
 
     const handlerFunc = handlers[pathname];
 
     if (handlerFunc) {
         try {
-            // Check critical envs (Only as a simple protection)
+            // Check critical envs
             const isDebug = url.searchParams.get('debug') === '1';
             const missingEnvs = [];
             if (!process.env.VITE_SUPABASE_URL) missingEnvs.push('VITE_SUPABASE_URL');
@@ -72,9 +75,16 @@ export default async function handler(req: any, res: any) {
             if (!process.env.INTERNAL_API_KEY) missingEnvs.push('INTERNAL_API_KEY');
 
             if (missingEnvs.length > 0) {
-                console.error(`[api:index] Missing Envs: ${missingEnvs.join(', ')}`);
+                console.error(`[api:index] Missing Envs: ${missingEnvs.join(', ')} id=${requestId}`);
                 if (isDebug) {
-                    return res.status(500).json({ error: 'Missing Envs', details: missingEnvs });
+                    return res.status(500).json({
+                        ok: false,
+                        requestId,
+                        code: 'API_5XX',
+                        message_public: 'Server Config Error',
+                        details: missingEnvs,
+                        retryable: false
+                    });
                 }
             }
 
@@ -87,21 +97,31 @@ export default async function handler(req: any, res: any) {
             };
 
             const result = await handlerFunc(req, res);
-            console.log(`[api:index] END method=${req.method} path=${pathname} status=${statusCode}`);
+            const duration = Date.now() - startTime;
+            console.log(`[api:index] END id=${requestId} method=${req.method} path=${pathname} status=${statusCode} duration=${duration}ms`);
             return result;
         } catch (error: any) {
-            console.error(`Error in handler for ${pathname}:`, error);
+            const duration = Date.now() - startTime;
+            console.error(`[api:index] EXCEPTION id=${requestId} path=${pathname} duration=${duration}ms error:`, error);
+
+            // Clean/Safe error response
             return res.status(500).json({
-                error: 'Internal Server Error',
-                message: error.message,
-                path: pathname
+                ok: false,
+                requestId,
+                code: 'API_5XX',
+                message_public: 'Internal Server Error',
+                stage: 'unhandled_exception',
+                retryable: true // Default to true for unexpected crashes as they might be transient
             });
         }
     }
 
     return res.status(404).json({
-        error: `Not Found (Unified API Entry): ${pathname}`,
-        url: req.url,
-        instruction: "Check vercel.json rewrites or api/index.ts handlers map."
+        ok: false,
+        requestId,
+        code: 'API_4XX',
+        message_public: `Not Found: ${pathname}`,
+        instruction: "Check vercel.json rewrites or api/index.ts handlers map.",
+        retryable: false
     });
 }

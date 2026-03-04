@@ -54,8 +54,17 @@ export default async function handler(req: any, res: any) {
 
     // 3. API Config Check
     const apiKey = process.env.GEMINI_API_KEY;
+    const requestId = req.headers['x-request-id'] || 'unknown';
+
     if (!apiKey) {
-        return res.status(500).json({ error: 'Server API configuration error' });
+        return res.status(500).json({
+            ok: false,
+            requestId,
+            code: 'API_5XX',
+            message_public: 'Server API configuration error',
+            stage: 'init',
+            retryable: false
+        });
     }
 
     // 4. Supabase Config Check
@@ -64,57 +73,91 @@ export default async function handler(req: any, res: any) {
     const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
     try {
-        const { parts, systemInstruction, user_role } = req.body;
+        const { parts, user_role } = req.body;
 
         // Initialize Gemini Client
         const ai = new GoogleGenAI({ apiKey });
 
-        // Call Gemini
-        const result = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
-            contents: [
-                {
-                    role: "user",
-                    parts: parts
-                }
-            ],
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
+        // Call Gemini with explicit timeout protection
+        console.log(`[analyze_service] Calling Gemini id=${requestId}`);
+
+        let result;
+        try {
+            // Using a race to implement a reliable timeout for the AI call
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('UPSTREAM_TIMEOUT')), 25000)
+            );
+
+            const aiPromise = ai.models.generateContent({
+                model: 'gemini-2.0-flash',
+                contents: [{ role: "user", parts }],
+                config: { responseMimeType: "application/json" }
+            });
+
+            result = await Promise.race([aiPromise, timeoutPromise]) as any;
+        } catch (aiError: any) {
+            console.error(`[analyze_service] Gemini Error id=${requestId}:`, aiError);
+            const isTimeout = aiError.message === 'UPSTREAM_TIMEOUT';
+            return res.status(isTimeout ? 504 : 502).json({
+                ok: false,
+                requestId,
+                code: 'UPSTREAM_AI',
+                message_public: isTimeout ? 'AIの応答がタイムアウトしました。' : 'AIサービスでエラーが発生しました。',
+                stage: 'call_llm',
+                retryable: true
+            });
+        }
 
         const text = result.text;
+        if (!text) {
+            throw new Error('Empty text from AI');
+        }
+
         let savedData = null;
 
         // 5. Supabase Logging
         if (supabase) {
-            const { data, error } = await supabase
-                .from('analyses')
-                .insert([
-                    {
-                        raw_response: JSON.parse(text),
-                        request_parts: parts,
-                        session_id: sessionId,
-                        user_role: user_role || 'FREE'
-                    }
-                ])
-                .select();
+            try {
+                const { data, error: dbError } = await supabase
+                    .from('analyses')
+                    .insert([
+                        {
+                            raw_response: JSON.parse(text),
+                            request_parts: parts,
+                            session_id: sessionId,
+                            user_role: user_role || 'FREE'
+                        }
+                    ])
+                    .select();
 
-            if (error) {
-                console.warn('Supabase Insert Error:', error);
-            } else {
-                savedData = data?.[0];
+                if (dbError) {
+                    console.warn(`[analyze_service] Supabase Insert Error id=${requestId}:`, dbError);
+                    // Do not fail the whole request if only logging fails, but return the status
+                } else {
+                    savedData = data?.[0];
+                }
+            } catch (dbEx) {
+                console.error(`[analyze_service] Supabase Exception id=${requestId}:`, dbEx);
             }
         }
 
         return res.status(200).json({
+            ok: true,
+            requestId,
             text,
             savedId: savedData?.id || null,
             supabaseStatus: supabase ? (savedData ? 'success' : 'failed') : 'not_configured'
         });
 
     } catch (error: any) {
-        console.error('API Error:', error);
-        return res.status(500).json({ error: error.message || 'Internal Server Error' });
+        console.error(`[analyze_service] UNEXPECTED Error id=${requestId}:`, error);
+        return res.status(500).json({
+            ok: false,
+            requestId,
+            code: 'API_5XX',
+            message_public: '解析中に予期せぬエラーが発生しました。',
+            stage: 'postprocess',
+            retryable: true
+        });
     }
 }
