@@ -62,8 +62,18 @@ const App: React.FC = () => {
   const [apiDisabled, setApiDisabled] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [researchStatus, setResearchStatus] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState(false);
 
   // --- API Health Check ---
+  // ... (rest of methods)
+
+  const handleCopyBuildInfo = useCallback(() => {
+    const text = `${__BUILD_INFO__.version} / sha:${__BUILD_INFO__.sha} / ${__BUILD_INFO__.env}`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopyStatus(true);
+      setTimeout(() => setCopyStatus(false), 2000);
+    });
+  }, []);
   const checkApiHealth = useCallback(async () => {
     try {
       setApiDisabled(false);
@@ -629,12 +639,21 @@ const App: React.FC = () => {
 
       <footer className="w-full max-w-4xl mt-12 pb-8 text-center text-[10px] text-slate-400 px-6 leading-relaxed">
         <p className="mb-3">本アプリは医療的な診断、治療、または助言を提供するものではありません。<br className="hidden sm:inline" />健康上の問題については、必ず医師または他の適切な医療従事者にご相談ください。</p>
-        <div className="font-mono opacity-50 flex flex-wrap justify-center items-center gap-x-3 gap-y-1">
-          <span>{__BUILD_INFO__.version}</span>
-          <span className="opacity-30">/</span>
-          <span>sha:{__BUILD_INFO__.sha}</span>
-          <span className="opacity-30">/</span>
-          <span className="uppercase">{__BUILD_INFO__.env}</span>
+        <div
+          onClick={handleCopyBuildInfo}
+          className="font-mono opacity-50 flex flex-wrap justify-center items-center gap-x-3 gap-y-1 cursor-pointer hover:opacity-100 active:scale-95 transition-all"
+        >
+          {copyStatus ? (
+            <span className="text-emerald-500 font-bold animate-pulse">Copied build info!</span>
+          ) : (
+            <>
+              <span>{__BUILD_INFO__.version}</span>
+              <span className="opacity-30">/</span>
+              <span>sha:{__BUILD_INFO__.sha}</span>
+              <span className="opacity-30">/</span>
+              <span className="uppercase">{__BUILD_INFO__.env}</span>
+            </>
+          )}
         </div>
       </footer>
       <DevControlCenter />

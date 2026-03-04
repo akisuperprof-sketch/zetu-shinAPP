@@ -14,9 +14,11 @@ import report_summaryByRole from '../api-src/report/summaryByRole';
 import report_confidence from '../api-src/report/confidence';
 import report_heatmap from '../api-src/report/heatmap';
 import save_observation from '../api-src/research/save_observation';
+import health from '../api-src/health';
 
 const handlers: Record<string, any> = {
     '/api/analyze': analyze,
+    '/api/health': health,
     '/api/research_debug': research_debug,
     '/api/research': research,
     '/api/research/save_observation': save_observation,

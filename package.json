@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3000",
-    "build": "vite build",
+    "dev": "node scripts/generate-build-info.js && vite --port 3000",
+    "build": "node scripts/generate-build-info.js && vite build",
     "preview": "vite preview",
     "prepare": "husky",
     "test:regression": "vitest run tests/regression",

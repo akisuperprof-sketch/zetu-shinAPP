@@ -13,7 +13,12 @@
     - `API_CHECK_FAILED: 500`: サーバー側での環境変数未設定（`GEMINI_API_KEY` 等）。
     - `CONNECTION_FAILED`: ネットワーク遮断、または Vercel Functions のコールドスタート失敗。
 
-### 2段階：サーバーログの確認 (Vercel Dashboard)
+### 2段階：サーバーログ・ヘルスチェックの確認
+- ブラウザで `{HOST}/api/health` にアクセスし、以下の情報が正しく返るか確認します：
+    - `status: "ok"`
+    - `version`: フロントエンドのフッターと一致しているか
+    - `sha`: デプロイされたコミットハッシュ
+
 - Vercel の Logs タブを開き、`[api:index]` または `[save_observation]` をフィルタリングします。
 - ステータスコードが 200 以外（401, 429, 500）になっているリクエストの詳細を確認します。
 
