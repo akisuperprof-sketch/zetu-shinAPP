@@ -56,7 +56,10 @@ export default async function handler(req: any, res: any) {
             is_dummy
         } = req.body;
 
+        console.log(`[save_observation] START: anonId=${anonymous_user_id}`);
+
         if (!anonymous_user_id || !image_base64) {
+            console.error('[save_observation] ERROR: Missing required data');
             return res.status(400).json({ error: 'Missing required data' });
         }
 
@@ -76,7 +79,9 @@ export default async function handler(req: any, res: any) {
             });
 
         if (uploadError) {
-            console.error('Storage Upload Error:', uploadError);
+            console.error(`[save_observation] Storage Upload Error: ${uploadError.message}`, { path: storagePath });
+        } else {
+            console.log(`[save_observation] Storage Upload Success: ${storagePath}`);
         }
 
         // 3. DBへレコード保存 (tongue_observations テーブル)
@@ -97,14 +102,15 @@ export default async function handler(req: any, res: any) {
             }]);
 
         if (dbError) {
-            console.warn('DB Insert Error (Observations):', dbError);
+            console.error(`[save_observation] DB Insert Error: ${dbError.message}`);
             return res.status(500).json({ status: 'failed', error: dbError.message });
         }
 
+        console.log(`[save_observation] DB Insert Success: anonId=${anonymous_user_id}`);
         return res.status(200).json({ status: 'success', path: storagePath });
 
     } catch (error: any) {
-        console.error('Observation logging failed:', error);
+        console.error(`[save_observation] UNEXPECTED ERROR: ${error.message}`);
         return res.status(500).json({ status: 'error', message: error.message });
     }
 }

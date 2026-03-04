@@ -56,16 +56,39 @@ export default async function handler(req: any, res: any) {
     let pathname = routeParam ? `/api/${routeParam}` : url.pathname;
 
     // [Minimal Log] for tracking in Vercel logs
-    console.log(`[api:index] method=${req.method} path=${pathname} (originalUrl=${req.url}) type=${req.headers['content-type'] || 'none'} len=${req.headers['content-length'] || 0}`);
+    console.log(`[api:index] START method=${req.method} path=${pathname}`);
 
     const handlerFunc = handlers[pathname];
 
     if (handlerFunc) {
         try {
-            return await handlerFunc(req, res);
+            // Check critical envs (Only as a simple protection)
+            const isDebug = url.searchParams.get('debug') === '1';
+            const missingEnvs = [];
+            if (!process.env.VITE_SUPABASE_URL) missingEnvs.push('VITE_SUPABASE_URL');
+            if (!process.env.GEMINI_API_KEY) missingEnvs.push('GEMINI_API_KEY');
+            if (!process.env.INTERNAL_API_KEY) missingEnvs.push('INTERNAL_API_KEY');
+
+            if (missingEnvs.length > 0) {
+                console.error(`[api:index] Missing Envs: ${missingEnvs.join(', ')}`);
+                if (isDebug) {
+                    return res.status(500).json({ error: 'Missing Envs', details: missingEnvs });
+                }
+            }
+
+            // Capture status code for logging
+            const originalStatus = res.status;
+            let statusCode = 200;
+            res.status = (code: number) => {
+                statusCode = code;
+                return originalStatus.call(res, code);
+            };
+
+            const result = await handlerFunc(req, res);
+            console.log(`[api:index] END method=${req.method} path=${pathname} status=${statusCode}`);
+            return result;
         } catch (error: any) {
             console.error(`Error in handler for ${pathname}:`, error);
-            // Always return JSON error to avoid HTML 500 pages breaking client logic
             return res.status(500).json({
                 error: 'Internal Server Error',
                 message: error.message,

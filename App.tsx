@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import SplashScreen from './components/SplashScreen';
 import DisclaimerScreen from './components/DisclaimerScreen';
 import UserInfoScreen from './components/UserInfoScreen';
@@ -49,7 +49,7 @@ const App: React.FC = () => {
   });
 
   // Research Logging Dedupe Ref
-  const sentResearchHashes = React.useRef<Set<string>>(new Set());
+  const sentResearchHashes = useRef<Set<string>>(new Set());
 
   // Settings & Dev Mode
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -57,6 +57,33 @@ const App: React.FC = () => {
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>(AnalysisMode.Standard);
   const [qualityReason, setQualityReason] = useState<string>("");
   const [showDevFlagBanner, setShowDevFlagBanner] = useState(false);
+
+  // API Health States
+  const [apiDisabled, setApiDisabled] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [researchStatus, setResearchStatus] = useState<string | null>(null);
+
+  // --- API Health Check ---
+  const checkApiHealth = useCallback(async () => {
+    try {
+      setApiDisabled(false);
+      setApiError(null);
+
+      const res = await fetch('/api/token', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Unknown Network Error' }));
+        setApiDisabled(true);
+        setApiError(`API_CHECK_FAILED: ${res.status} ${data.error || ''}`);
+      }
+    } catch (err: any) {
+      setApiDisabled(true);
+      setApiError(`CONNECTION_FAILED: ${err.message}`);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkApiHealth();
+  }, [checkApiHealth]);
 
   // Force Pro Mode from localStorage (DEV ONLY)
   const isForcedPro = React.useMemo(() => {
@@ -356,12 +383,16 @@ const App: React.FC = () => {
       if (isResearchAgreed && payload) {
         const doObservationLog = async () => {
           try {
+            setResearchStatus('archiving...');
             const { getAnonymousUserId } = await import('./utils/anonymousId');
             const { extractImageFeatures } = await import('./services/features/imageFeatures');
 
             const anonId = getAnonymousUserId();
             const frontImage = uploadedImages.find(img => img.slot === '正面');
-            if (!frontImage) return;
+            if (!frontImage) {
+              setResearchStatus('failed: no_front_image');
+              return;
+            }
 
             // 1. 特徴抽出 (Step1) - 失敗しても止めない
             let features = null;
@@ -380,7 +411,10 @@ const App: React.FC = () => {
 
             // 3. トークン取得
             const tokenRes = await fetch('/api/token', { method: 'POST' });
-            if (!tokenRes.ok) return;
+            if (!tokenRes.ok) {
+              setResearchStatus(`failed: token_err_${tokenRes.status}`);
+              return;
+            }
             const { token } = await tokenRes.json();
 
             // 4. データ送信 (非同期・非ブロッキング)
@@ -403,10 +437,22 @@ const App: React.FC = () => {
                 features: features,
                 is_dummy: localStorage.getItem('DUMMY_TONGUE') === 'true'
               })
-            }).catch(err => console.error("Save observation failed:", err));
+            })
+              .then(async (r) => {
+                if (r.ok) setResearchStatus('archived_ok');
+                else {
+                  const err = await r.json().catch(() => ({ error: 'Unknown' }));
+                  setResearchStatus(`archived_failed: ${r.status} ${err.error || ''}`);
+                }
+              })
+              .catch(err => {
+                console.error("Save observation failed:", err);
+                setResearchStatus(`archived_error: ${err.message}`);
+              });
 
-          } catch (err) {
+          } catch (err: any) {
             console.error('Observation archiving failed silently:', err);
+            setResearchStatus(`archived_exception: ${err.message}`);
           }
         };
         doObservationLog();
@@ -438,7 +484,10 @@ const App: React.FC = () => {
         return <UploadWizard
           onStartAnalysis={handleStartAnalysis}
           devMode={devMode}
-          disabled={showDevFlagBanner || (!import.meta.env.DEV && localStorage.getItem('IS_ADMIN') !== 'true')}
+          disabled={showDevFlagBanner}
+          apiDisabled={apiDisabled}
+          apiError={apiError}
+          onRetryApi={checkApiHealth}
           plan={currentEffectivePlan}
         />;
       case AppState.Hearing:
@@ -587,6 +636,11 @@ const App: React.FC = () => {
       </div>
       <DevControlCenter />
       <DebugPanel plan={currentEffectivePlan} />
+      {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1' && researchStatus && (
+        <div className="fixed bottom-12 right-2 text-[8px] font-mono text-white bg-black/60 px-2 py-1 rounded z-50 pointer-events-none">
+          RESEARCH: {researchStatus}
+        </div>
+      )}
     </div >
   );
 };

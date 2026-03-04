@@ -12,6 +12,9 @@ interface UploadWizardProps {
   devMode?: boolean;
   disabled?: boolean;
   plan?: AnalysisMode;
+  apiDisabled?: boolean;
+  apiError?: string | null;
+  onRetryApi?: () => void;
 }
 
 const GUIDE_MESSAGES = {
@@ -112,7 +115,7 @@ const ImageUploadSlot: React.FC<{
   );
 };
 
-const UploadWizard: React.FC<UploadWizardProps> = ({ onStartAnalysis, devMode, disabled, plan }) => {
+const UploadWizard: React.FC<UploadWizardProps> = ({ onStartAnalysis, devMode, disabled, plan, apiDisabled, apiError, onRetryApi }) => {
   const [isSimpleMode, setIsSimpleMode] = useState(true);
   const [showTutorial, setShowTutorial] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -435,14 +438,33 @@ const UploadWizard: React.FC<UploadWizardProps> = ({ onStartAnalysis, devMode, d
         </div>
       )}
 
-      <button
-        onClick={handleSubmit}
-        disabled={!allImagesUploaded || isCompressing || disabled}
-        className={`w-full text-white font-bold py-4 px-6 rounded-2xl transition-all duration-300 shadow-sm ${disabled ? 'bg-red-300 cursor-not-allowed' : 'bg-brand-primary hover:opacity-90 disabled:bg-slate-300 disabled:cursor-not-allowed'
-          }`}
-      >
-        {disabled ? '現在利用できません' : (isCompressing ? '処理中...' : (allImagesUploaded ? '解析を開始する' : (isSimpleMode ? '正面画像を撮影してください' : 'すべての画像を撮影してください')))}
-      </button>
+      {/* Debug Info (Only if URL has debug=1) */}
+      {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1' && apiError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[10px] font-mono text-red-600 break-all leading-tight">
+          [DEBUG: API_ERROR] {apiError}
+        </div>
+      )}
+
+      {apiDisabled ? (
+        <button
+          onClick={onRetryApi}
+          className="w-full bg-slate-800 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-slate-700 transition-all active:scale-95 text-xs tracking-[0.2em] uppercase flex items-center justify-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          サーバー接続を再試行
+        </button>
+      ) : (
+        <button
+          onClick={handleSubmit}
+          disabled={!allImagesUploaded || isCompressing || disabled}
+          className={`w-full text-white font-black py-5 rounded-2xl transition-all duration-300 shadow-xl tracking-[0.2em] uppercase text-xs ${disabled ? 'bg-red-300 cursor-not-allowed' : 'bg-[#1F3A5F] hover:bg-[#162944] disabled:bg-slate-300 disabled:cursor-not-allowed shadow-[#1F3A5F]/20'
+            }`}
+        >
+          {disabled ? '現在利用できません' : (isCompressing ? '画像を最適化中...' : (allImagesUploaded ? '解析を開始する' : (isSimpleMode ? '正面画像を撮影してください' : 'すべての画像を撮影してください')))}
+        </button>
+      )}
     </div>
   );
 };
