@@ -110,19 +110,27 @@ export const generateShareCard = async (data: ShareCardData): Promise<string> =>
             // 7. Message
             ctx.fillStyle = COLORS.white;
             ctx.font = `700 30px ${fontFamily}`;
-            ctx.fillText(getShareMessage(data.score), width / 2, 560);
+            ctx.fillText(getShareMessage(data.score), width / 2, 540);
 
             // 8. Share Question (v1.5 Hook)
             if (data.shareQuestion) {
                 ctx.fillStyle = COLORS.brandJade;
                 ctx.font = `black 28px ${fontFamily}`;
-                ctx.fillText(`Q. ${data.shareQuestion}`, width / 2, 595);
+                ctx.fillText(`Q. ${data.shareQuestion}`, width / 2, 580);
             }
 
-            // 9. Bottom Disclaimer & URL
+            // 9. App Watermark (Added)
+            ctx.textAlign = 'right';
+            ctx.fillStyle = 'rgba(111, 195, 178, 0.4)';
+            ctx.font = `900 18px ${fontFamily}`;
+            ctx.letterSpacing = "0.3em";
+            ctx.fillText("Z-26 TONGUE DIAGNOSIS AI | ALPHA", width - 50, 50);
+
+            // 10. Bottom Disclaimer
+            ctx.textAlign = 'center';
             ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.font = `500 14px ${fontFamily}`;
-            ctx.fillText("※本解析はAIによる推論であり医療診断ではありません。体調に不安がある場合は医師にご相談ください。", width / 2, 615);
+            ctx.fillText("※本解析はAIによる推論であり医療診断ではありません。体調に不安がある場合は医師にご相談ください。", width / 2, 610);
 
             // PNG Output
             const dataUrl = canvas.toDataURL('image/png');
