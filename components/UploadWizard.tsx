@@ -293,26 +293,29 @@ const UploadWizard: React.FC<UploadWizardProps> = ({ onStartAnalysis, devMode, d
           <StreakBadge />
         </div>
         <h2 className="text-2xl font-bold text-brand-primary">舌の画像を撮影</h2>
-        <p className="text-slate-600 mt-1 mb-4">モードを選択して画像をアップロードしてください</p>
+        <p className="text-slate-600 mt-1 mb-4">画像をアップロードしてください</p>
 
-        <div className="inline-flex bg-slate-100 p-1 rounded-lg text-sm font-bold shadow-inner">
-          <button
-            onClick={() => setIsSimpleMode(true)}
-            className={`px-6 py-2 rounded-md transition-all duration-300 ${isSimpleMode ? 'bg-white shadow-sm text-brand-primary' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            シンプル
-          </button>
-          <button
-            onClick={() => setIsSimpleMode(false)}
-            className={`px-6 py-2 rounded-md transition-all duration-300 ${!isSimpleMode ? 'bg-white shadow-sm text-brand-primary' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            プロモード
-          </button>
-        </div>
+        {/* モード切替は DEV or debug=1 のみ表示（Phase1は「シンプル」固定） */}
+        {(import.meta.env.DEV || (typeof window !== 'undefined' && window.location.search.includes('debug=1'))) && (
+          <div className="inline-flex bg-slate-100 p-1 rounded-lg text-sm font-bold shadow-inner">
+            <button
+              onClick={() => setIsSimpleMode(true)}
+              className={`px-6 py-2 rounded-md transition-all duration-300 ${isSimpleMode ? 'bg-white shadow-sm text-brand-primary' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              シンプル
+            </button>
+            <button
+              onClick={() => setIsSimpleMode(false)}
+              className={`px-6 py-2 rounded-md transition-all duration-300 ${!isSimpleMode ? 'bg-white shadow-sm text-brand-primary' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              プロモード
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mb-6 animate-fade-in text-center">
-        {devMode && <p className="text-orange-500 font-bold text-sm bg-orange-50 inline-block px-3 py-1 rounded-full border border-orange-200">【開発モード】撮影ガイド有効</p>}
+        {devMode && import.meta.env.DEV && <p className="text-orange-500 font-bold text-sm bg-orange-50 inline-block px-3 py-1 rounded-full border border-orange-200">【開発モード】撮影ガイド有効</p>}
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">

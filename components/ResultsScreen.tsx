@@ -129,18 +129,31 @@ interface ResultsScreenProps {
 }
 
 const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, uploadedImages, plan, planType }) => {
-  const { findings, result_v2 } = result;
+  const { findings, result_v2, isDevLocalCheck, devLocalScore } = result;
   const v2 = result_v2?.output_payload;
   const axes = v2?.axes || { xuShi: 0, heatCold: 0, zaoShi: 0 };
   const conditionType = getConditionType(v2?.diagnosis.top1_id || result.top3?.[0]?.id || null);
   const typeKey = v2?.diagnosis.top1_id || result.top3?.[0]?.id || 'neutral';
   const typeMeta = NINE_TYPE_MAP[typeKey] || NINE_TYPE_MAP['neutral'];
 
+  let finalTypeLabel = typeMeta.label;
+  let finalResearchPrefix = typeMeta.research;
+  if (isDevLocalCheck && devLocalScore !== undefined) {
+    if (devLocalScore < 40) {
+      finalTypeLabel = "寒寄り";
+    } else if (devLocalScore > 60) {
+      finalTypeLabel = "熱寄り";
+    } else {
+      finalTypeLabel = "安定";
+    }
+    finalResearchPrefix = "LOCAL_MOCK";
+  }
+
   const streak = getStreakData();
   const celebrateMsg = getCelebrateMessage(streak.streakDays);
   const isPhase1StoryEnabled = typeof window !== 'undefined' && localStorage.getItem('FF_PHASE1_STORY_V1') === '1';
-  const dummyScore = 50 + (conditionType.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 45);
-  const story = isPhase1StoryEnabled ? getPhase1Story({ typeKey: conditionType.key, score: dummyScore, streakDays: streak.streakDays }) : null;
+  const dummyScore = isDevLocalCheck && devLocalScore !== undefined ? devLocalScore : 50 + (conditionType.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 45);
+  const story = isPhase1StoryEnabled && !isDevLocalCheck ? getPhase1Story({ typeKey: conditionType.key, score: dummyScore, streakDays: streak.streakDays }) : null;
 
   const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'visual' | 'history'>('overview');
 
@@ -170,14 +183,19 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
 
       {/* 📡 Hero Section: 80px Spacing */}
       <div className="max-w-4xl mx-auto px-6 py-20 flex flex-col items-center">
+        {isDevLocalCheck && (
+          <div className="mb-6 px-5 py-2 bg-orange-500 text-white text-[12px] font-black tracking-widest rounded-full shadow-lg border-2 border-orange-400">
+            DEV LOCAL CHECK
+          </div>
+        )}
         <div className="text-center">
           <p className="text-[#6FC3B2] text-[13px] font-black uppercase tracking-[0.5em] mb-4">今日のコンディション</p>
           <h1 className="text-[48px] font-black text-[#1F3A5F] tracking-tighter leading-tight mb-2">
-            {typeMeta.label}
+            {finalTypeLabel}
           </h1>
           <div className="flex flex-col items-center gap-1">
             <span className="text-slate-400 text-[12px] font-black tracking-widest uppercase mb-4">
-              （{typeMeta.research}）
+              （{finalResearchPrefix}）
             </span>
             <div className="flex items-baseline gap-2">
               <span className="text-slate-300 text-[16px] font-black italic">Score</span>
@@ -191,16 +209,18 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
       </div>
 
       {/* 🧭 Condition Map: Spaced for Hierarchy */}
-      <div className="max-w-4xl mx-auto px-6 mb-20">
-        <CircularMap
-          x={(axes.heatCold / 100) * 0.8}
-          y={(axes.xuShi / 100) * 0.8}
-          typeLabel={typeMeta.label}
-        />
-        <div className="mt-12 text-center">
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Coordinate Analysis</p>
+      {!isDevLocalCheck && (
+        <div className="max-w-4xl mx-auto px-6 mb-20">
+          <CircularMap
+            x={(axes.heatCold / 100) * 0.8}
+            y={(axes.xuShi / 100) * 0.8}
+            typeLabel={finalTypeLabel}
+          />
+          <div className="mt-12 text-center">
+            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Coordinate Analysis</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 💬 Zetushin's Guidance (Character Hook) */}
       <div className="max-w-2xl mx-auto px-6 mb-20">
@@ -209,7 +229,7 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
           <div className="flex-1 space-y-4">
             <p className="text-[11px] font-black text-[#6FC3B2] uppercase tracking-[0.4em]">💬 舌神のひとこと</p>
             <p className="text-[16px] text-[#1F3A5F] font-bold leading-relaxed">
-              「今日のコンディションは{typeMeta.label}だね。{isPhase1StoryEnabled && story?.hookLine ? story.hookLine : "身体の声に耳を傾け、大切に過ごしておくれ。"}」
+              「今日のコンディションは{finalTypeLabel}だね。{isPhase1StoryEnabled && story?.hookLine ? story.hookLine : "身体の声に耳を傾け、大切に過ごしておくれ。"}」
             </p>
           </div>
         </div>
@@ -233,13 +253,13 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
         <div className="bg-white/90 backdrop-blur-xl rounded-[2.5rem] p-1.5 shadow-lg border border-slate-100 flex overflow-hidden mb-12 sticky top-6 z-40">
           {[
             { id: 'overview', label: '詳細概要' },
-            { id: 'map', label: '体質分布' },
+            !isDevLocalCheck && { id: 'map', label: '体質分布' },
             { id: 'visual', label: '画像解析' },
             { id: 'history', label: '履歴' }
-          ].map(tab => (
+          ].filter(Boolean).map((tab: any) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`flex-1 py-4 px-2 rounded-[2rem] text-[12px] font-black tracking-widest transition-all ${activeTab === tab.id
                 ? 'bg-[#1F3A5F] text-white shadow-xl'
                 : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'

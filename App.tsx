@@ -239,8 +239,43 @@ const App: React.FC = () => {
     setAppState(AppState.Hearing);
   }, []);
 
+  const handleDevLocalCheck = useCallback((answers: Record<string, number | null>) => {
+    let sum = 0;
+    if (answers) {
+      Object.values(answers).forEach(v => {
+        if (typeof v === 'number') sum += v;
+      });
+    }
+    let top1 = 'neutral';
+    if (sum < 40) top1 = 'yang_def';
+    else if (sum > 60) top1 = 'yin_def';
+
+    setAnalysisResult({
+      findings: [],
+      result_v2: {
+        output_payload: {
+          output_version: 'local_check',
+          guard: { level: 1, band: '', mix: '' },
+          diagnosis: { top1_id: top1, top2_id: null, top3_ids: [] },
+          display: { template_key: '', show: { show_pattern_name: false, show_top3_list: false } }
+        }
+      },
+      isDevLocalCheck: true,
+      devLocalScore: sum
+    });
+    setAnalysisError(null);
+    setRetryCount(0);
+    setAppState(AppState.Results);
+  }, []);
+
   const handleHearingNext = useCallback(async (hearingAnswers: Record<string, number | null>) => {
     const isDummy = import.meta.env.DEV && typeof window !== 'undefined' && localStorage.getItem("DUMMY_TONGUE") === "true";
+    const isDevCheckParam = typeof window !== 'undefined' && window.location.search.includes('debug=1');
+
+    if (isDevCheckParam) {
+      handleDevLocalCheck(hearingAnswers);
+      return;
+    }
 
     // 1. Image Quality Guard (Skip if DUMMY)
     if (!isDummy) {
@@ -537,6 +572,7 @@ const App: React.FC = () => {
       case AppState.Hearing:
         return <HearingScreen onNext={handleHearingNext} onBack={() => setAppState(AppState.Uploading)} />;
       case AppState.Analyzing:
+        const showLocalCheck = devMode || (typeof window !== 'undefined' && window.location.search.includes('debug=1'));
         return (
           <AnalysisScreen
             error={analysisError}
@@ -546,6 +582,7 @@ const App: React.FC = () => {
               setRetryCount(0);
               setAppState(AppState.Uploading);
             }}
+            onDevLocalCheck={showLocalCheck ? () => handleDevLocalCheck(userInfo?.answers?.hearing || {}) : undefined}
           />
         );
       case AppState.Results:
@@ -624,7 +661,7 @@ const App: React.FC = () => {
             ? (import.meta.env.DEV ? 'bg-[#0F1C2E] text-[#2E6F5E] border-[#2E6F5E] shadow-[0_0_15px_rgba(46,111,94,0.4)]' : 'bg-slate-800/50 text-white border-white/10 backdrop-blur-md')
             : (import.meta.env.DEV ? 'bg-slate-200 text-slate-600 border-slate-300' : 'bg-slate-100 text-slate-600 border-slate-200 shadow-sm')
             } ${import.meta.env.DEV ? 'scale-110' : ''}`}>
-            <span>PLAN: {isPro ? 'PRO' : 'LIGHT'}</span>
+            <span>PLAN: {isPro ? 'PRO' : 'FREE'}</span>
             {import.meta.env.DEV && (
               <>
                 {localStorage.getItem("FORCE_PRO") === "true" && <span className="bg-[#B84C3A] text-white px-1 rounded-[2px] ml-1 text-[8px]">TRIAL</span>}

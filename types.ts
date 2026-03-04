@@ -118,6 +118,8 @@ export interface DiagnosisResult {
   result_v2?: {
     output_payload: AnalysisV2Payload;
   };
+  isDevLocalCheck?: boolean;
+  devLocalScore?: number;
 }
 
 export enum AnalysisMode {

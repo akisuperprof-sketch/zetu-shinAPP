@@ -6,7 +6,13 @@ interface DisclaimerScreenProps {
 }
 
 const DisclaimerScreen: React.FC<DisclaimerScreenProps> = ({ onAgree }) => {
-  const [isChecked, setIsChecked] = useState(false);
+  const [isTermsChecked, setIsTermsChecked] = useState(false);
+  const [isResearchChecked, setIsResearchChecked] = useState(true);
+
+  const handleAgree = () => {
+    localStorage.setItem('RESEARCH_AGREED', isResearchChecked ? 'true' : 'false');
+    onAgree();
+  };
 
   return (
     <div className="bg-white p-10 md:p-16 rounded-[3rem] shadow-[0_40px_100px_rgba(31,58,95,0.05)] border border-slate-100 animate-fade-in max-w-3xl mx-auto font-noto relative overflow-hidden">
@@ -49,23 +55,39 @@ const DisclaimerScreen: React.FC<DisclaimerScreenProps> = ({ onAgree }) => {
           <p>緊急の場合は、直ちに救急医療機関に連絡してください。</p>
         </div>
 
+        <div className="bg-[#F8FAFC] p-5 rounded-2xl border border-slate-100 mb-8">
+          <label htmlFor="research_agree" className="flex items-start gap-3 cursor-pointer">
+            <input
+              id="research_agree"
+              type="checkbox"
+              checked={isResearchChecked}
+              onChange={() => setIsResearchChecked(!isResearchChecked)}
+              className="mt-0.5 h-5 w-5 rounded border-slate-300 text-[#6FC3B2] focus:ring-[#6FC3B2] cursor-pointer flex-shrink-0"
+            />
+            <span className="text-[12px] text-slate-600 leading-relaxed font-medium">
+              研究協力のお願い：撮影した舌画像と回答は、個人が特定できない形に整えて東洋医学研究に活用します。
+            </span>
+          </label>
+          <p className="text-[10px] text-slate-400 mt-2 ml-8">※同意しない場合でも、アプリの通常機能はそのままご利用いただけます。</p>
+        </div>
+
         <div className="flex flex-col items-center justify-center space-y-6">
           <div className="flex items-center group cursor-pointer">
             <input
-              id="agree"
+              id="terms_agree"
               type="checkbox"
-              checked={isChecked}
-              onChange={() => setIsChecked(!isChecked)}
+              checked={isTermsChecked}
+              onChange={() => setIsTermsChecked(!isTermsChecked)}
               className="h-5 w-5 rounded border-slate-300 text-[#6FC3B2] focus:ring-[#6FC3B2] cursor-pointer"
             />
-            <label htmlFor="agree" className="ml-4 text-[13px] text-slate-600 cursor-pointer select-none font-bold">
-              上記の内容を理解し、同意します
+            <label htmlFor="terms_agree" className="ml-4 text-[13px] text-slate-600 cursor-pointer select-none font-bold">
+              上記免責事項等の内容を理解し、同意します
             </label>
           </div>
 
           <button
-            onClick={onAgree}
-            disabled={!isChecked}
+            onClick={handleAgree}
+            disabled={!isTermsChecked}
             className="w-full bg-[#1F3A5F] text-white font-black py-6 px-10 rounded-[2.5rem] hover:bg-[#162944] disabled:bg-slate-200 disabled:cursor-not-allowed transition-all duration-300 shadow-xl text-[15px] tracking-widest uppercase"
           >
             同意して観測を始める
