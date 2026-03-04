@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
+import SplashScreen from './components/SplashScreen';
 import DisclaimerScreen from './components/DisclaimerScreen';
 import UserInfoScreen from './components/UserInfoScreen';
 import UploadWizard from './components/UploadWizard';
@@ -35,7 +36,7 @@ if (typeof document !== 'undefined') {
 }
 
 const App: React.FC = () => {
-  const [appState, setAppState] = useState<AppState>(AppState.Disclaimer);
+  const [appState, setAppState] = useState<AppState>(AppState.Splash);
   const [analysisResult, setAnalysisResult] = useState<DiagnosisResult | null>(null);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
@@ -64,6 +65,10 @@ const App: React.FC = () => {
   }, []);
 
   const currentEffectivePlan = isForcedPro ? AnalysisMode.Pro : (devMode ? analysisMode : AnalysisMode.Standard);
+
+  const handleSplashComplete = useCallback(() => {
+    setAppState(AppState.Disclaimer);
+  }, []);
 
   const handleAgree = useCallback(() => {
     setAppState(AppState.UserInfo);
@@ -419,6 +424,8 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (appState) {
+      case AppState.Splash:
+        return <SplashScreen onComplete={handleSplashComplete} />;
       case AppState.Disclaimer:
         return <DisclaimerScreen onAgree={handleAgree} />;
       case AppState.UserInfo:
@@ -500,11 +507,11 @@ const App: React.FC = () => {
       <header className="w-full max-w-4xl mb-6 py-6 flex items-center justify-between px-4 sm:px-0">
         <div className="flex-1 text-center sm:text-left">
           <h1 className={`text-2xl sm:text-3xl font-black tracking-tighter ${isPro ? 'text-blue-300' : ''}`} style={{ color: isPro ? undefined : colors.light.primary }}>
-            舌診アシスタント2025
+            舌神 -ZETUSHIN-
           </h1>
           <div className="flex items-center space-x-2 mt-1">
             <p className={`text-[10px] font-bold uppercase tracking-widest ${isPro ? 'text-blue-400/60' : 'text-slate-400'}`}>
-              セルフケアのための傾向分析・補助ツール {import.meta.env.DEV && <span className="text-orange-500 font-black">[DEV]</span>}
+              セルフコンディション観測ツール {import.meta.env.DEV && <span className="text-orange-500 font-black">[DEV]</span>}
             </p>
           </div>
         </div>

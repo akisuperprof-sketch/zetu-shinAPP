@@ -58,6 +58,7 @@ export interface AnalysisV2Payload {
 }
 
 export enum AppState {
+  Splash,
   Disclaimer,
   UserInfo,
   Uploading,
