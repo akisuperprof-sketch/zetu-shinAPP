@@ -53,23 +53,27 @@ export default async function handler(req: any, res: any) {
     const requestId = req.headers['x-request-id'] || `req_${startTime}_${Math.random().toString(16).slice(2, 10)}`;
     res.setHeader('x-request-id', requestId);
 
-    // Vercel Optional Catch-all routes the path into req.query.path as an array
-    const { path } = req.query;
-    const pathString = Array.isArray(path) ? path.join('/') : (path || '');
+    // More robust path resolution: remove /api/ prefix and any query params
+    const host = req.headers.host || 'localhost';
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const fullUrl = new URL(req.url, `${protocol}://${host}`);
 
-    // Fallback logic for ?_r=... (legacy rewrites)
-    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-    const routeParam = url.searchParams.get('_r');
-    const pathname = routeParam || pathString;
+    // Legacy support for ?_r= or direct path from the URL itself
+    // We want the part after /api/
+    const routeParam = fullUrl.searchParams.get('_r');
+    let pathname = routeParam || fullUrl.pathname.replace(/^\/api\//, '');
 
-    console.log(`[api:main] START id=${requestId} method=${req.method} path=${pathname}`);
+    // Normalize: remove trailing slashes
+    pathname = pathname.replace(/\/$/, '');
+
+    console.log(`[api:main] START id=${requestId} method=${req.method} path=${pathname} (rawUrl=${req.url})`);
 
     const handlerFunc = handlers[pathname];
 
     if (handlerFunc) {
         try {
             // Check critical envs
-            const isDebug = url.searchParams.get('debug') === '1';
+            const isDebug = fullUrl.searchParams.get('debug') === '1';
             const missingEnvs = [];
             if (!process.env.VITE_SUPABASE_URL) missingEnvs.push('VITE_SUPABASE_URL');
             if (!process.env.GEMINI_API_KEY) missingEnvs.push('GEMINI_API_KEY');
