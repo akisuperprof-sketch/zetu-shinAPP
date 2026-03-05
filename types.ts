@@ -178,4 +178,5 @@ export interface FeatureFlags {
   TYPE_MAP: boolean;          // マップ型結果表示
   INVITE_FRIEND: boolean;     // 友人招待・チケット付与
   FEATURE_HIRATA_V01: boolean; // 平田式アルゴリズムv0.1
+  FEATURE_COLOR_ASSIST: boolean; // 色判定の観察補助UI
 }

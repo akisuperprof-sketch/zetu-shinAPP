@@ -16,6 +16,7 @@ import ImageQualityGateScreen from './components/ImageQualityGateScreen';
 import { AnalysisMode, AppState, DiagnosisResult, FindingResult, UploadedImage, UserInfo, Gender, ImageSlot, PlanType } from './types';
 import { routeTongueAnalysis } from './services/tongueAnalyzerRouter';
 import { analyzeImageQuality } from './utils/imageQualityAnalyzer';
+import { extractImageFeatures, ImageFeatures } from './services/features/imageFeatures';
 import { saveHistory, getHistoryItem, reconstructFindings, reconstructImages, saveLastUserInfo } from './services/historyService';
 import DevSettingsScreen from './components/DevSettingsScreen';
 import { isDevEnabled, purgeDevFlagsInProd } from './utils/devFlags';
@@ -67,6 +68,7 @@ const App: React.FC = () => {
   // API Health States
   const [apiDisabled, setApiDisabled] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [imageFeatures, setImageFeatures] = useState<ImageFeatures | null>(null);
   const [researchStatus, setResearchStatus] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState(false);
 
@@ -149,7 +151,7 @@ const App: React.FC = () => {
       }
       if (uploadedImages.length === 0) {
         setUploadedImages([
-          { slot: ImageSlot.Front, file: new File([""], "dummy.jpg", { type: "image/jpeg" }), previewUrl: "/tongue_scale_chart.jpg" }
+          { slot: ImageSlot.Front, file: new File([""], "dummy.jpg", { type: "image/jpeg" }), previewUrl: "/reference/tongue_color_spectrum.png" }
         ]);
       }
       if (appState !== AppState.Hearing && appState !== AppState.Analyzing && appState !== AppState.Results) {
@@ -424,9 +426,12 @@ const App: React.FC = () => {
                 img_blur_score: qualityPayload.blur_score,
                 img_brightness_mean: qualityPayload.brightness_mean,
                 img_saturation_mean: qualityPayload.saturation_mean,
-                quality_feedback_flag: !!qualityReason
               })
             }).catch(err => console.error("Failed to update quality_payload:", err));
+
+            // Populate the newly added state
+            const localImgFeats = await extractImageFeatures(files[0]);
+            setImageFeatures(localImgFeats);
           }
         } catch (err) {
           console.warn("Quality assessment failed in background:", err);

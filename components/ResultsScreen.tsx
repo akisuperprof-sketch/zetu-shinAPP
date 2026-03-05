@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DiagnosisResult, RiskLevel, UploadedImage, PlanType } from '../types';
+import { DiagnosisResult, RiskLevel, UploadedImage, PlanType, UserInfo } from '../types';
 import FindingCard from './FindingCard';
 import { getConditionType } from '../utils/typeMapper';
 import { getSession } from '../utils/userSession';
@@ -10,6 +10,7 @@ import { getHistoryMini, getDelta } from '../utils/historyMini';
 import { getPhase1Story } from '../utils/phase1Story';
 import ShareCardSystem from './ShareCardSystem';
 import { isFeatureEnabled } from '../utils/featureFlags';
+import { ImageFeatures } from '../services/features/imageFeatures';
 
 
 // --- Research Minimal Style (Zetushin v1.1) ---
@@ -130,9 +131,12 @@ interface ResultsScreenProps {
   onOpenDictionary?: () => void;
   plan?: string;
   planType?: PlanType;
+  userInfo?: UserInfo | null;
+  onHistoryClick?: () => void;
+  imageFeatures?: ImageFeatures | null;
 }
 
-const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, uploadedImages, plan, planType }) => {
+const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, uploadedImages, plan, planType, userInfo, onHistoryClick, onOpenDictionary, imageFeatures }) => {
   const { findings, result_v2, isDevLocalCheck, devLocalScore } = result;
   const v2 = result_v2?.output_payload;
   const axes = v2?.axes || { xuShi: 0, heatCold: 0, zaoShi: 0 };
@@ -235,6 +239,59 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
             </h4>
             <div className="text-[11px] font-medium text-slate-600 leading-relaxed">
               ※ この表示は `FEATURE_HIRATA_V01` フラグが有効な場合のみ表示されます。現在バックグラウンドで平田式オリジナル舌診アルゴリズム（寒熱虚実4分類）が稼働しています。
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🎨 Color Assist UI (Feature Flagged) */}
+      {isFeatureEnabled('FEATURE_COLOR_ASSIST') && imageFeatures && (
+        <div className="max-w-2xl mx-auto px-6 mb-12 animate-fade-in-up delay-300">
+          <div className="bg-orange-50/50 rounded-3xl p-6 border border-orange-100 shadow-sm relative overflow-hidden">
+            <h4 className="text-[12px] font-black text-orange-800 flex items-center gap-2 mb-4 tracking-widest uppercase">
+              <span className="text-[14px]">🎨</span> 色判定 観察補助 (Research/Assist)
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="bg-white p-3 rounded-2xl border border-orange-50 text-center shadow-[0_2px_8px_rgba(234,88,12,0.05)]">
+                <p className="text-[10px] text-orange-400 font-bold tracking-widest uppercase mb-1">R-Mean</p>
+                <div className="flex items-baseline justify-center gap-1">
+                  <p className="text-[20px] font-black text-[#1F3A5F]">{imageFeatures.color_r_mean || '-'}</p>
+                </div>
+              </div>
+              <div className="bg-white p-3 rounded-2xl border border-orange-50 text-center shadow-[0_2px_8px_rgba(234,88,12,0.05)]">
+                <p className="text-[10px] text-orange-400 font-bold tracking-widest uppercase mb-1">G-Mean</p>
+                <div className="flex items-baseline justify-center gap-1">
+                  <p className="text-[20px] font-black text-[#1F3A5F]">{imageFeatures.color_g_mean || '-'}</p>
+                </div>
+              </div>
+              <div className="bg-white p-3 rounded-2xl border border-orange-50 text-center shadow-[0_2px_8px_rgba(234,88,12,0.05)]">
+                <p className="text-[10px] text-orange-400 font-bold tracking-widest uppercase mb-1">B-Mean</p>
+                <div className="flex items-baseline justify-center gap-1">
+                  <p className="text-[20px] font-black text-[#1F3A5F]">{imageFeatures.color_b_mean || '-'}</p>
+                </div>
+              </div>
+              <div className="bg-white p-3 rounded-2xl border border-orange-50 text-center shadow-[0_2px_8px_rgba(234,88,12,0.05)]">
+                <p className="text-[10px] text-red-400 font-bold tracking-widest uppercase mb-1">Redness</p>
+                <div className="flex items-baseline justify-center gap-1">
+                  <p className="text-[20px] font-black text-red-500">{imageFeatures.redness_score || '-'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Color Assist Reference UI */}
+            <div className="bg-white/80 p-4 rounded-2xl border border-orange-100/50 mt-4">
+              <p className="text-[11px] font-bold text-slate-700 mb-2">判定基準（SSOT Reference）</p>
+              <div className="h-6 w-full rounded-full overflow-hidden mb-2 relative flex shadow-inner">
+                {/* Visual spectrum representation matching tongue_color_spectrum.png loosely */}
+                <div className="h-full flex-1" style={{ backgroundColor: '#FADEE1' }} title="淡白舌"></div>
+                <div className="h-full flex-1" style={{ backgroundColor: '#F8BFC7' }} title="淡紅舌"></div>
+                <div className="h-full flex-1" style={{ backgroundColor: '#E45B6B' }} title="紅舌"></div>
+                <div className="h-full flex-1" style={{ backgroundColor: '#BC283A' }} title="絳舌"></div>
+                <div className="h-full flex-1" style={{ backgroundColor: '#A45D8C' }} title="紫舌"></div>
+              </div>
+              <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
+                ※この機能は研究者向けの観察補助（Assist）機能です。表示されている指標に基づく特定の自動診断結果・断定文を出力するものではありません。実際の判定には `project/reference/` 配下の SSOT画像 を参考に目視確認を行うか、専門家の判断を仰いでください。
+              </p>
             </div>
           </div>
         </div>

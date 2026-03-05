@@ -12,6 +12,10 @@ export interface ImageFeatures {
     tongue_area_ratio: number | null;
     whiteness_ratio: number | null;
     yellowness_ratio: number | null;
+    color_r_mean: number | null;
+    color_g_mean: number | null;
+    color_b_mean: number | null;
+    redness_score: number | null; // R-G + R-B など赤み評価の簡易指標
 }
 
 /**
@@ -38,6 +42,7 @@ export async function extractImageFeatures(file: File): Promise<ImageFeatures> {
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const data = imageData.data;
                     const numPixels = data.length / 4;
+                    if (numPixels === 0) throw new Error("No pixel data");
 
                     let rSum = 0, gSum = 0, bSum = 0, graySum = 0;
                     let brightnessValues: number[] = [];
@@ -112,9 +117,13 @@ export async function extractImageFeatures(file: File): Promise<ImageFeatures> {
                         saturation_mean: Math.round(saturation_mean),
                         sharpness: Math.round(sharpness * 10) / 10,
                         blur_score: Math.round(blur_score * 10) / 10,
-                        tongue_area_ratio: null, // Phase 1 では null
+                        tongue_area_ratio: null,
                         whiteness_ratio: Math.round((whiteCount / numPixels) * 100) / 100,
-                        yellowness_ratio: Math.round((yellowCount / numPixels) * 100) / 100
+                        yellowness_ratio: Math.round((yellowCount / numPixels) * 100) / 100,
+                        color_r_mean: Math.round(r_mean),
+                        color_g_mean: Math.round(g_mean),
+                        color_b_mean: Math.round(b_mean),
+                        redness_score: Math.round((r_mean - g_mean) + (r_mean - b_mean))
                     });
 
                 } catch (err) {
@@ -128,7 +137,11 @@ export async function extractImageFeatures(file: File): Promise<ImageFeatures> {
                         blur_score: 0,
                         tongue_area_ratio: null,
                         whiteness_ratio: null,
-                        yellowness_ratio: null
+                        yellowness_ratio: null,
+                        color_r_mean: null,
+                        color_g_mean: null,
+                        color_b_mean: null,
+                        redness_score: null
                     });
                 }
             };
