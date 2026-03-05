@@ -79,6 +79,8 @@ export const FEATURES: FeatureFlags = {
     FEATURE_HIRATA_V01: false,
     FEATURE_COLOR_ASSIST: false,
     FEATURE_OBSERVATION_INPUT: false,
+    FEATURE_ROI_V0: false,
+    FEATURE_OBSERVATION_LOG: false,
 };
 
 /**

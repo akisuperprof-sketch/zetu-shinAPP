@@ -25,13 +25,15 @@ export default async function handler(req: any, res: any) {
         return res.status(500).json({ error: 'Supabase not configured' });
     }
 
-    const updateData: any = { v2_payload };
+    const updateData: any = {};
+    if (v2_payload !== undefined) updateData.v2_payload = v2_payload;
     if (quality_payload !== undefined) updateData.quality_payload = quality_payload;
     if (user_role !== undefined) updateData.user_role = user_role;
     if (img_blur_score !== undefined) updateData.img_blur_score = img_blur_score;
     if (img_brightness_mean !== undefined) updateData.img_brightness_mean = img_brightness_mean;
     if (img_saturation_mean !== undefined) updateData.img_saturation_mean = img_saturation_mean;
     if (quality_feedback_flag !== undefined) updateData.quality_feedback_flag = quality_feedback_flag;
+    if (req.body.expert_observation !== undefined) updateData.expert_observation = req.body.expert_observation;
 
     const { data, error } = await supabase
         .from('analyses')

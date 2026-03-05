@@ -180,4 +180,6 @@ export interface FeatureFlags {
   FEATURE_HIRATA_V01: boolean; // 平田式アルゴリズムv0.1
   FEATURE_COLOR_ASSIST: boolean; // 色判定の観察補助UI
   FEATURE_OBSERVATION_INPUT: boolean; // 研究用観察入力UI
+  FEATURE_ROI_V0: boolean; // ROI(関心領域)抽出アルゴリズムv0
+  FEATURE_OBSERVATION_LOG: boolean; // 観察入力ログの保存(研究用)
 }

@@ -1,31 +1,72 @@
 import React, { useState } from 'react';
 import { EXPERT_PATTERNS, TONGUE_COLORS, COAT_THICKNESSES, COAT_COLORS, MOISTURES, ExpertPatternType } from '../constants/expertPattern';
+import { getSession } from '../utils/userSession';
+import { isFeatureEnabled } from '../utils/featureFlags';
 
 interface ObservationInputPanelProps {
+    analysisId?: string;
     onSave?: (data: any) => void;
 }
 
-const ObservationInputPanel: React.FC<ObservationInputPanelProps> = ({ onSave }) => {
+const ObservationInputPanel: React.FC<ObservationInputPanelProps> = ({ analysisId, onSave }) => {
     const [tongueColor, setTongueColor] = useState<string>('不明');
     const [coatThickness, setCoatThickness] = useState<string>('不明');
     const [coatColor, setCoatColor] = useState<string>('不明');
     const [moisture, setMoisture] = useState<string>('不明');
     const [pattern, setPattern] = useState<string>('不明');
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
 
     const patternKeys = Object.keys(EXPERT_PATTERNS) as ExpertPatternType[];
 
-    const handleSave = () => {
+    const session = getSession();
+    const isLogEnabled = isFeatureEnabled('FEATURE_OBSERVATION_LOG');
+    const canSave = session?.researchAgreed === true && isLogEnabled;
+
+    const handleSave = async () => {
+        if (!isLogEnabled) {
+            alert('ログ保存機能は現在無効化されています。');
+            return;
+        }
+        if (!session?.researchAgreed) {
+            alert('研究への同意がないため保存できません。');
+            return;
+        }
+
+        const payload = { tongueColor, coatThickness, coatColor, moisture, pattern, anonId: session.anonId };
+
         if (onSave) {
-            onSave({
-                tongueColor,
-                coatThickness,
-                coatColor,
-                moisture,
-                pattern
+            onSave(payload);
+            setSaved(true);
+            return;
+        }
+
+        if (!analysisId) {
+            alert('保存対象の解析IDがありません。');
+            return;
+        }
+
+        try {
+            setSaving(true);
+            const res = await fetch('/api/analyze/update_v2', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    analysis_id: analysisId,
+                    expert_observation: payload
+                })
             });
-        } else {
-            console.log('Observation Saved:', { tongueColor, coatThickness, coatColor, moisture, pattern });
-            alert('観察データを一時保存しました。');
+
+            if (res.ok) {
+                setSaved(true);
+            } else {
+                alert('保存に失敗しました。');
+            }
+        } catch (e) {
+            console.error('Observation save failed', e);
+            alert('保存中にエラーが発生しました。');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -118,13 +159,18 @@ const ObservationInputPanel: React.FC<ObservationInputPanelProps> = ({ onSave })
                 </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-end flex-col items-end">
                 <button
                     onClick={handleSave}
-                    className="bg-[#1F3A5F] text-white px-6 py-2 rounded-full text-[13px] font-bold shadow-md"
+                    disabled={saving || saved || !canSave}
+                    className={`px-6 py-2 rounded-full text-[13px] font-bold shadow-md transition-colors ${saved ? 'bg-green-500 text-white' : canSave ? 'bg-[#1F3A5F] text-white' : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                        } disabled:opacity-50`}
                 >
-                    保存 (Console/Alert)
+                    {saving ? '保存中...' : saved ? '保存完了' : '研究ログとして保存'}
                 </button>
+                {!canSave && (
+                    <p className="text-[10px] text-red-500 mt-1">※研究への同意がないため保存できません</p>
+                )}
             </div>
         </div>
     );

@@ -16,6 +16,7 @@ export interface ImageFeatures {
     color_g_mean: number | null;
     color_b_mean: number | null;
     redness_score: number | null; // R-G + R-B など赤み評価の簡易指標
+    roi_failed?: boolean;
 }
 
 /**
@@ -47,31 +48,71 @@ export async function extractImageFeatures(file: File): Promise<ImageFeatures> {
                     let rSum = 0, gSum = 0, bSum = 0, graySum = 0;
                     let brightnessValues: number[] = [];
 
-                    // 1. 基本統計量
-                    for (let i = 0; i < data.length; i += 4) {
-                        const r = data[i];
-                        const g = data[i + 1];
-                        const b = data[i + 2];
+                    // FEATURE_ROI_V0 フラグに基づく処理
+                    const useRoi = typeof window !== 'undefined' && localStorage.getItem('FEATURE_ROI_V0') === '1';
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    const roiRadiusX = canvas.width * 0.25; // 中央50%の幅
+                    const roiRadiusY = canvas.height * 0.25;
 
-                        const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-                        rSum += r;
-                        gSum += g;
-                        bSum += b;
-                        graySum += brightness;
-                        brightnessValues.push(brightness);
+                    let validPixelCount = 0;
+                    let roi_failed = false;
+
+                    // 1. 基本統計量
+                    for (let y = 0; y < canvas.height; y++) {
+                        for (let x = 0; x < canvas.width; x++) {
+                            const i = (y * canvas.width + x) * 4;
+                            const r = data[i];
+                            const g = data[i + 1];
+                            const b = data[i + 2];
+
+                            // ROI判定
+                            let inRoi = true;
+                            if (useRoi) {
+                                const inCenter = Math.abs(x - centerX) <= roiRadiusX && Math.abs(y - centerY) <= roiRadiusY;
+                                const isReddish = r > g && r > b && (r - Math.min(g, b)) > 10; // 肌・舌っぽい色
+                                inRoi = inCenter && isReddish;
+                            }
+
+                            if (inRoi) {
+                                const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                                rSum += r;
+                                gSum += g;
+                                bSum += b;
+                                graySum += brightness;
+                                brightnessValues.push(brightness);
+                                validPixelCount++;
+                            }
+                        }
                     }
 
-                    const brightness_mean = graySum / numPixels;
-                    const r_mean = rSum / numPixels;
-                    const g_mean = gSum / numPixels;
-                    const b_mean = bSum / numPixels;
+                    if (useRoi && validPixelCount < 100) {
+                        // ROI抽出失敗時はフォールバック（全体）へ倒すが、フラグは立てる
+                        roi_failed = true;
+                        validPixelCount = 0;
+                        rSum = 0; gSum = 0; bSum = 0; graySum = 0;
+                        brightnessValues = [];
+                        for (let i = 0; i < data.length; i += 4) {
+                            const r = data[i]; const g = data[i + 1]; const b = data[i + 2];
+                            const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                            rSum += r; gSum += g; bSum += b; graySum += brightness;
+                            brightnessValues.push(brightness);
+                            validPixelCount++;
+                        }
+                        if (validPixelCount === 0) throw new Error("No pixel data even in fallback");
+                    }
+
+                    const brightness_mean = graySum / validPixelCount;
+                    const r_mean = rSum / validPixelCount;
+                    const g_mean = gSum / validPixelCount;
+                    const b_mean = bSum / validPixelCount;
 
                     // 2. コントラスト (標準偏差)
                     let sqDiffSum = 0;
                     for (const b of brightnessValues) {
                         sqDiffSum += Math.pow(b - brightness_mean, 2);
                     }
-                    const contrast = Math.sqrt(sqDiffSum / numPixels);
+                    const contrast = Math.sqrt(sqDiffSum / validPixelCount);
 
                     // 3. 彩度 (平均的な鮮やかさ)
                     const saturation_mean = Math.sqrt(
@@ -123,7 +164,8 @@ export async function extractImageFeatures(file: File): Promise<ImageFeatures> {
                         color_r_mean: Math.round(r_mean),
                         color_g_mean: Math.round(g_mean),
                         color_b_mean: Math.round(b_mean),
-                        redness_score: Math.round((r_mean - g_mean) + (r_mean - b_mean))
+                        redness_score: Math.round((r_mean - g_mean) + (r_mean - b_mean)),
+                        roi_failed
                     });
 
                 } catch (err) {
@@ -141,7 +183,8 @@ export async function extractImageFeatures(file: File): Promise<ImageFeatures> {
                         color_r_mean: null,
                         color_g_mean: null,
                         color_b_mean: null,
-                        redness_score: null
+                        redness_score: null,
+                        roi_failed: true
                     });
                 }
             };

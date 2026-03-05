@@ -248,7 +248,7 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
       {/* 🔬 Observation Input UI (Feature Flagged) */}
       {isFeatureEnabled('FEATURE_OBSERVATION_INPUT') && (
         <div className="max-w-2xl mx-auto px-6 mb-12 animate-fade-in-up delay-300">
-          <ObservationInputPanel />
+          <ObservationInputPanel analysisId={result.savedId} />
         </div>
       )}
 
