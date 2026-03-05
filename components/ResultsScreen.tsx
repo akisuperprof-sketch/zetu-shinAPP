@@ -8,6 +8,9 @@ import StreakBadge from './StreakBadge';
 import { ShareCardData, generateShareCard } from '../utils/shareCard';
 import { getHistoryMini, getDelta } from '../utils/historyMini';
 import { getPhase1Story } from '../utils/phase1Story';
+import ShareCardSystem from './ShareCardSystem';
+import { isFeatureEnabled } from '../utils/featureFlags';
+
 
 // --- Research Minimal Style (Zetushin v1.1) ---
 const RESEARCH_UI_CSS = `
@@ -236,15 +239,40 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
         </div>
       </div>
 
-      {/* 📲 Action Area */}
-      <div className="max-w-xl mx-auto px-6 mb-20 flex flex-col gap-5">
-        <button
-          onClick={handleShareCard}
-          className="w-full bg-[#1F3A5F] text-white font-black py-6 rounded-[2.5rem] shadow-2xl hover:bg-[#162944] transition-all active:scale-[0.98] text-[15px] tracking-widest uppercase"
-        >
-          カードを保存して共有する
-        </button>
-        <button onClick={onRestart} className="w-full text-slate-400 font-black text-[10px] uppercase tracking-[0.3em]">
+      {/* 🔬 Research Participation Notice */}
+      {getSession()?.researchAgreed && (
+        <div className="max-w-2xl mx-auto px-6 mb-12">
+          <div className="bg-[#1F3A5F]/5 rounded-3xl p-6 border border-[#1F3A5F]/10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)]">
+            <h4 className="text-[12px] font-black text-[#1F3A5F] flex items-center gap-2 mb-3 tracking-widest uppercase">
+              <span className="text-[14px]">🔬</span> 東洋医学研究に参加中
+            </h4>
+            <div className="text-[11px] font-medium text-slate-600 leading-relaxed space-y-3">
+              <p>・あなたの画像とデータは<strong>匿名化（anon_id）</strong>され、個人情報と切り離して保存されます。</p>
+              <p>・アップロード前に<strong>画像位置情報（EXIF）等のメタデータは物理的に消去</strong>されています。</p>
+              <p>・ご提供いただいたデータは、舌診AI精度の向上および次世代の東洋医学・予防医学エコシステム構築という<strong>重要な社会的意義</strong>のために活用されます。</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📲 Action Area & Diffusion Feature (Feature Flagged) */}
+      <div className="max-w-xl mx-auto px-6 mb-20 flex flex-col gap-6">
+        {isFeatureEnabled('FEATURE_SHARE_CARD') && (
+          <div className="flex flex-col items-center gap-6">
+            <button
+              onClick={handleShareCard}
+              className="w-full bg-[#1F3A5F] text-white font-black py-5 rounded-[2.5rem] shadow-2xl hover:bg-[#162944] transition-all active:scale-[0.98] text-[14px] tracking-[0.2em] uppercase flex flex-col items-center justify-center gap-1"
+            >
+              <span>結果カードを保存して共有</span>
+              <span className="text-[9px] font-bold text-slate-300 opacity-80">(#舌診AI でシェア)</span>
+            </button>
+            <div className="w-full overflow-hidden rounded-2xl border border-slate-200 shadow-inner bg-slate-50 relative pointer-events-none">
+              <ShareCardSystem result={result} userInfo={getSession()} nickname={getSession()?.nickname || 'ゲスト'} />
+            </div>
+          </div>
+        )}
+
+        <button onClick={onRestart} className="w-full text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] py-4 hover:text-slate-600 transition-colors">
           ← START NEW OBSERVATION
         </button>
       </div>
