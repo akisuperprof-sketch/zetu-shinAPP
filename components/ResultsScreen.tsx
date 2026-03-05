@@ -11,6 +11,7 @@ import { getPhase1Story } from '../utils/phase1Story';
 import ShareCardSystem from './ShareCardSystem';
 import { isFeatureEnabled } from '../utils/featureFlags';
 import { ImageFeatures } from '../services/features/imageFeatures';
+import ObservationInputPanel from './ObservationInputPanel';
 
 
 // --- Research Minimal Style (Zetushin v1.1) ---
@@ -241,6 +242,13 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
               ※ この表示は `FEATURE_HIRATA_V01` フラグが有効な場合のみ表示されます。現在バックグラウンドで平田式オリジナル舌診アルゴリズム（寒熱虚実4分類）が稼働しています。
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 🔬 Observation Input UI (Feature Flagged) */}
+      {isFeatureEnabled('FEATURE_OBSERVATION_INPUT') && (
+        <div className="max-w-2xl mx-auto px-6 mb-12 animate-fade-in-up delay-300">
+          <ObservationInputPanel />
         </div>
       )}
 

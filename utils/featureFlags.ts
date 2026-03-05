@@ -78,6 +78,7 @@ export const FEATURES: FeatureFlags = {
     INVITE_FRIEND: false,
     FEATURE_HIRATA_V01: false,
     FEATURE_COLOR_ASSIST: false,
+    FEATURE_OBSERVATION_INPUT: false,
 };
 
 /**
