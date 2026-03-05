@@ -56,6 +56,9 @@ export default defineConfig(({ mode }) => {
           app: path.resolve(__dirname, 'app/index.html')
         }
       }
+    },
+    test: {
+      exclude: ['**/node_modules/**', '**/dist/**', '**/*.spec.ts']
     }
   };
 });

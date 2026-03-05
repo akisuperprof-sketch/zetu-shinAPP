@@ -93,9 +93,14 @@ export const FEATURES: FeatureFlags = {
 export const isFeatureEnabled = (key: keyof FeatureFlags): boolean => {
     // 本番環境でのハードロック
     if (IS_PROD) {
-        return FEATURES[key] && import.meta.env?.VITE_ENABLE_FUTURE_FEATURES === 'true';
+        return (FEATURES[key] || (typeof window !== 'undefined' && window.localStorage.getItem(key) === '1')) && import.meta.env?.VITE_ENABLE_FUTURE_FEATURES === 'true';
     }
 
-    // 開発環境では FEATURES の値に従う
+    // 開発環境ではローカルストレージのオーバーライドを優先し、なければデフォルト値
+    if (typeof window !== 'undefined') {
+        const local = window.localStorage.getItem(key);
+        if (local === '1' || local === 'true') return true;
+    }
+
     return FEATURES[key];
 };
