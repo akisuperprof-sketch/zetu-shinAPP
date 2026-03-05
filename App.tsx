@@ -371,6 +371,36 @@ const App: React.FC = () => {
       const files = uploadedImages.map(img => img.file);
       const currentMode = currentEffectivePlan;
       const userRole = localStorage.getItem('role') || 'FREE';
+      const anonId = session?.anonId || 'unknown';
+
+      // --- [TASK 2: Analysis Limit Check (Edge Function)] ---
+      // Only check for non-pro/non-student roles (e.g. general/FREE)
+      if (userRole === 'FREE' || userRole === 'general') {
+        try {
+          const limitRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify_limits`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({ anon_id: anonId, plan_type: planType })
+          });
+          if (limitRes.ok) {
+            const limitData = await limitRes.json();
+            if (!limitData.allowed) {
+              setAnalysisError({
+                code: 'LIMIT_EXCEEDED',
+                message_public: '今月の解析回数制限（3回）を超えました。来月またご利用ください。',
+                retryable: false
+              });
+              setAppState(AppState.Analyzing);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn("Limit check failed, continuing anyway (best effort):", e);
+        }
+      }
 
       const result = await routeTongueAnalysis(files, userInfo, currentMode, userRole);
 
@@ -448,21 +478,19 @@ const App: React.FC = () => {
       const isResearchAgreed = typeof window !== 'undefined' && localStorage.getItem('RESEARCH_AGREED') === 'true';
       const payload = result.result_v2?.output_payload;
 
-      if (isResearchAgreed && payload) {
+      if (session?.researchAgreed && payload) {
         const doObservationLog = async () => {
           try {
             setResearchStatus('archiving...');
-            const { getAnonymousUserId } = await import('./utils/anonymousId');
             const { extractImageFeatures } = await import('./services/features/imageFeatures');
 
-            const anonId = getAnonymousUserId();
             const frontImage = uploadedImages.find(img => img.slot === '正面');
             if (!frontImage) {
               setResearchStatus('failed: no_front_image');
               return;
             }
 
-            // 1. 特徴抽出 (Step1) - 失敗しても止めない
+            // 1. 特徴抽出 - 失敗しても止めない
             let features = null;
             try {
               features = await extractImageFeatures(frontImage.file);
@@ -477,33 +505,27 @@ const App: React.FC = () => {
               reader.readAsDataURL(frontImage.file);
             });
 
-            // 3. トークン取得
-            const tokenRes = await fetch('/api/token', { method: 'POST' });
-            if (!tokenRes.ok) {
-              setResearchStatus(`failed: token_err_${tokenRes.status}`);
-              return;
-            }
-            const { token } = await tokenRes.json();
-
-            // 4. データ送信 (非同期・非ブロッキング)
-            fetch('/api/research/save_observation', {
+            // 3. データ送信 (TASK 1: research_save Edge Function)
+            fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/research_save`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
               },
               body: JSON.stringify({
-                anonymous_user_id: anonId,
+                anon_id: session.anonId,
                 image_base64: imageBase64,
                 image_mime_type: frontImage.file.type,
-                diagnosis: {
-                  type: payload.diagnosis.top1_id,
-                  score: 100, // Phase1 暫定
-                  x: payload.axes?.xuShi ?? 0,
-                  y: payload.axes?.heatCold ?? 0
-                },
-                features: features,
-                is_dummy: localStorage.getItem('DUMMY_TONGUE') === 'true'
+                age_range: userInfo?.ageRange,
+                gender: userInfo?.gender,
+                chief_complaint: userInfo?.concerns,
+                consent_version: session.researchConsentVersion || 'v1.0',
+                consent_at: session.researchConsentDate,
+                answers_json: userInfo?.answers,
+                questionnaire_version: 'v1.0',
+                scores_json: payload.axes,
+                pattern_ids: payload.diagnosis.top3_ids,
+                analysis_mode: currentEffectivePlan
               })
             })
               .then(async (r) => {
@@ -514,7 +536,7 @@ const App: React.FC = () => {
                 }
               })
               .catch(err => {
-                console.error("Save observation failed:", err);
+                console.error("Research save failed:", err);
                 setResearchStatus(`archived_error: ${err.message}`);
               });
 
