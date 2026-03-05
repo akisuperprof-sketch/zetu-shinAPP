@@ -4,6 +4,7 @@ import { calculateMetrics, ResearchMetrics } from '../services/research/statisti
 import ResearchAlerts from './ResearchAlerts';
 import DataCoveragePanel from './DataCoveragePanel';
 import { isFeatureEnabled } from '../utils/featureFlags';
+import { evaluateExpertAgreement, ExpertEvaluationMetrics } from '../services/research/expertEvaluation';
 
 interface ResearchDashboardProps {
     records?: ObservationData[];
@@ -12,6 +13,7 @@ interface ResearchDashboardProps {
 
 const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }) => {
     const [allTimeMetrics, setAllTimeMetrics] = useState<ResearchMetrics | null>(null);
+    const [expertMetrics, setExpertMetrics] = useState<ExpertEvaluationMetrics | null>(null);
     const [loading, setLoading] = useState(true);
     const [fetchedRecords, setFetchedRecords] = useState<ObservationData[]>([]);
 
@@ -32,6 +34,7 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
                 }
                 setFetchedRecords(dataToUse || []);
                 setAllTimeMetrics(calculateMetrics(dataToUse || []));
+                setExpertMetrics(evaluateExpertAgreement(dataToUse || []));
             } catch (err) {
                 console.error(err);
             } finally {
@@ -92,7 +95,7 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
             )}
 
             {/* Exclusion Reasons */}
-            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 shadow-inner">
+            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 shadow-inner mb-8">
                 <h3 className="text-sm font-black text-slate-700 mb-4 flex items-center gap-2">
                     <span>⚠️</span> Top Exclusion Reasons
                 </h3>
@@ -109,6 +112,38 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
                     </ul>
                 )}
             </div>
+
+            {/* Expert Evaluation */}
+            {isFeatureEnabled('FEATURE_EXPERT_EVALUATION') && expertMetrics && (
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+                    <h3 className="text-sm font-black text-slate-800 mb-4">🩺 Expert Agreement (v0)</h3>
+                    <div className="flex gap-4">
+                        <div className="bg-slate-50 p-4 rounded-xl flex-1 border border-slate-100">
+                            <p className="text-[10px] text-slate-500 font-bold mb-1">Agreement Rate</p>
+                            <p className="text-2xl font-black text-green-600">{(expertMetrics.agreement_rate * 100).toFixed(1)}%</p>
+                        </div>
+                        <div className="bg-slate-50 p-4 rounded-xl flex-1 border border-slate-100">
+                            <p className="text-[10px] text-slate-500 font-bold mb-1">Unlabeled Rate</p>
+                            <p className="text-2xl font-black text-orange-500">{(expertMetrics.unlabeled_rate * 100).toFixed(1)}%</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Quality Score & Estimator placeholders */}
+            {isFeatureEnabled('FEATURE_QUALITY_SCORE') && (
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+                    <h3 className="text-sm font-black text-slate-800 mb-2">📷 Quality Score Distrib (v0)</h3>
+                    <p className="text-xs text-slate-500">Coming soon as features are extracted.</p>
+                </div>
+            )}
+
+            {isFeatureEnabled('FEATURE_HEAT_COLD_ESTIMATOR') && (
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+                    <h3 className="text-sm font-black text-slate-800 mb-2">🔥 Heat-Cold Score Distrib (v0)</h3>
+                    <p className="text-xs text-slate-500">Coming soon based on vision layer integration.</p>
+                </div>
+            )}
         </div>
     );
 };

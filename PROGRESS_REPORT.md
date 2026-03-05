@@ -1,61 +1,60 @@
-# ZETUSHIN 開発進捗サマリ & 残タスク（引き継ぎ用）
-**ステータス**: フェーズ1（壊れない構造・研究参加基盤）完了
-**最終更新**: 2026-03-05
+# ZETUSHIN APP Progress Report (Research Dashboard & Modules)
+
+## 実装した範囲 (画像データ無しで完了した基礎基盤)
+
+1. **寒熱スペクトラムSSOT (`constants/heatColdSpectrum.ts`)**
+   - 寒熱スコアを `-100`（極寒）〜 `+100`（極熱）の連続値としてSSOT化しました。
+   - スコアから `JIKKAN`, `KYOKAN`, `NORMAL`, `JITSUNETSU`, `KYONETSU` の各bucketへマッピングする関数。
+   - BORDERLINE, QUALITY_LOW, CONFLICT 等の HOLD（保留）条件を定義し、断定を避ける安全機構を設けました。
+
+2. **追加特徴量ジェネレータ v1 (`services/vision/featureExtractorV1.ts`)**
+   - 既存の `imageFeatures` （RGB平均やブラー等）から、診断に使いやすい指標（プロキシ値 0-100）を純粋関数として抽出する機能を追加。
+   - `redness_index`, `brightness_index`, `yellow_coating_proxy`, `dryness_proxy`, `purple_proxy`, `texture_proxy` などを計算。
+
+3. **研究品質スコア算出 (`services/research/qualityScore.ts`)**
+   - `quality_flags` および画像特徴量から、品質スコア（0〜100）と「減点理由」のリストを出力する関数。
+   - 基準となる減点ウェイトは `constants/researchQualityWeights.ts` でSSOT管理。
+
+4. **専門家ラベル評価エンジン v0 (`services/research/expertEvaluation.ts`)**
+   - 現在のデータベース（`expert_observation`）に入っている「観察入力値」からルールベースで算出されるAI推論結果と、専門家が手動入力した確定ラベルの一致率を走査。
+   - 一致率、未ラベル率、トップの不一致理由などを出力。
+
+5. **寒熱スペクトラム推論エンジン v0 (`services/ai/heatColdEstimatorV0.ts`)**
+   - `featureExtractorV1` の出力をもとに、寒熱スコアの絶対値と判定理由を計算。ルールベースでの実装であり診断断定文は出力しません。
+
+6. **ダッシュボードへの統合 (`components/ResearchDashboard.tsx`)**
+   - 上記の評価エンジンを利用して算出したメトリクス（専門家一致率など）をUIに新たに追加（プレースホルダ含む）。
+
+7. **ROI v1 設計ドキュメント (`docs/roi_v1_design.md`)**
+   - 今後実装予定の精緻な舌領域検出（ROI）に関するアルゴリズム設計と方針をドキュメント化。
 
 ---
 
-## 1. 完了したマイルストーン
+## 管理フラグ一覧 (FeatureFlags)
+本番環境での不意な公開を防ぐため、以下のフラグを `utils/featureFlags.ts` (および `types.ts`)に追加し、すべてデフォルトで `false` に封印しています。ローカルや開発テスト時のみ `localStorage` から強制ON可能です。
 
-### 🛡 壊れない構造（アーキテクチャ）
-- **ドメイン物理分離**: `z-26`（LP）と `zetu-shin-app`（アプリ）をドメインレベルで遮断。LP側でのアプリ機能暴露を404で封印済み。
-- **DEV/DEBUG本番封印**: `isDevEnabled()` による二重ガード。本番ビルドでのデバッグツール、localStorageバイパス、URLパラメータ（?debug=1）を完全に無効化。
-- **自動監査CI**: GitHub Actions (`audit.yml`) および Playwright (`security.spec.ts`) による品質保証体制の構築。
-
-### 📊 研究データ基盤
-- **匿名データ設計**: `anon_id` を主キーとする研究用DBスキーマ（v1.0）を実装。
-- **セキュア保存**: 画像（EXIF除去済み）と診断結果を非同期で Supabase Storage/DB に保存する Edge Function を配置。
-- **研究同意UX**: 最短・価値明示型の同意UIを実装。同意ON時のみデータ保存が発火。
-
-### 👤 ユーザー体験（UX）
-- **ニックネーム呼称**: セッション開始時にニックネームを取得し、アプリ全域で「◯◯さん」と呼称するパーソナライズを完了。
-- **プラン・制限管理**: Edge Function による解析回数制限（Free=3回/月）の検証ロジックを実装。
-
-### 🚀 将来拡張（拡散UI）
-- **公式仕様書策定**: 10万人規模への拡散戦略・ワイヤーフレームを公式文書として保存。
-- **Feature Flag基盤**: 将来機能（共有カード等）を物理的に封印しつつ開発可能な `utils/featureFlags.ts` を導入。
+- `FEATURE_RESEARCH_DASHBOARD` : ダッシュボード大枠の表示
+- `FEATURE_RESEARCH_ALERTS` : 行動ガイド表示
+- `FEATURE_DATA_COVERAGE` : 不足データ可視化
+- `FEATURE_EXPERT_EVALUATION` : 専門家一致率パネルの表示
+- `FEATURE_QUALITY_SCORE` : 画質分布パネルの表示
+- `FEATURE_HEAT_COLD_ESTIMATOR` : 寒熱分布パネルの表示
+- `FEATURE_VISION_EXTRACTOR` : (v1ロジック稼働用)
 
 ---
 
-## 2. 監査証拠（最新）
-
-| 項目 | 検証内容 | 結果 |
-|:---|:---|:---|
-| **ドメイン分離** | LPドメインの `/app`, `/api` アクセス | ✅ 404 (PASS) |
-| **アプリ健全性** | APPドメインの `/api/health` 応答 | ✅ 200 (PASS) |
-| **DEV要素封印** | DOM上の開発者ボタン、[DEV]テキスト | ✅ 0件 (PASS) |
-| **?debug=1耐性** | パラメータ付与時のデバッグ機能無効化 | ✅ 期待通り (PASS) |
+## テスト結果・安全性
+- 全ての関数において、画像データや入力がNullの場合に例外や`NaN`を発生させない安全ガード（Nullセーフティ）を実装しています。
+- `vitest` によるこれら追加モジュールのパターンテストを含む全28項目のテストをパス。
+- `scripts/audit/run.sh` をパスし、LP（z-26）領域への侵犯や `/api` 等の混入が無いことを証明。
 
 ---
 
-## 3. 残タスク・ネクストステップ
+## 次のステップ（画像集積後にやること）
 
-### 🔴 最優先（本番稼働に必須）
-- [ ] **Supabase 環境変数の設定**: Vercel 本番環境に `VITE_SUPABASE_URL`, `ANON_KEY`, `SERVICE_ROLE_KEY` を設定。
-- [ ] **Edge Functions のデプロイ**: `edge_functions/` 配下のスクリプトを Supabase にデプロイ。
-- [ ] **SQLマイグレーション実行**: `supabase/migrations/` のSQLを本番DBへ適用。
-
-### 🟡 優先（機能強化）
-- [ ] **既存データ移行**: `docs/import_plan.md` に基づき、過去の100〜300枚の画像を匿名化してインポート。
-- [ ] **プラン変更導線**: 設定画面からProプラン/Student等のプランを明示的に変更・申請できるUIの追加。
-
-### 🔵 将来（一般公開フェーズ）
-- [ ] **拡散UIの解放**: `utils/featureFlags.ts` のフラグを順次 ON にし、SNS共有カード機能をリリース。
-- [ ] **体質マップ・統計**: 集計データに基づく地域・季節別の体質バイアス分析機能の実装。
-
----
-
-## 4. 参照リンク
-- [README.md](./README.md) - プロジェクト概要
-- [FIXED_CONSTITUTION.md](./FIXED_CONSTITUTION.md) - 最高法規
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - システム構造
-- [拡散機能完全仕様書](./%E6%8B%A1%E6%95%A3%E6%A9%9F%E8%83%BD%E5%AE%8C%E5%85%A8%E4%BB%95%E6%A7%98%E6%9B%B8) - 成長戦略
+1. **画像の継続的な投入 (27パターンの網羅)**
+   - ダッシュボードの不足データ(Data Coverage Panel)を見ながら、必要なカテゴリの舌画像を重点的にアップロード・評価入力します。
+2. **ROI v1 (舌検出) の本格実装**
+   - 画像が揃ってきた段階で `docs/roi_v1_design.md` に基づいた OpenCV.js や Canvas レベルでのコンター抽出ロジックをコーディングし、特徴量取得を「純粋な舌のみ」に制限します。
+3. **HeatCold Estimator パラメータチューニング**
+   - Expert Evaluation Engine（混同行列）の結果を見ながら、`heatColdEstimatorV0` のウェイトを調整し、一致率が上昇するよう改善を行います。
