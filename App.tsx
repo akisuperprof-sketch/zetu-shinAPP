@@ -27,6 +27,7 @@ import { pushHistoryMini } from './utils/historyMini';
 import { getConditionType } from './utils/typeMapper';
 import { DebugPanel } from './components/DebugPanel';
 import AdminDashboard from './components/AdminDashboard';
+import ResearchDashboard from './components/ResearchDashboard';
 import { saveLatestPayloadForDebug } from './utils/debugStorage';
 import DevControlCenter from './components/DevControlCenter';
 
@@ -168,6 +169,8 @@ const App: React.FC = () => {
         setAppState(AppState.DevSettings);
       } else if (path.endsWith('/admin/report')) {
         setAppState(AppState.AdminDashboard);
+      } else if (path.endsWith('/admin/research')) {
+        setAppState(AppState.ResearchDashboard);
       } else if (window.location.hash === '#dev-settings') {
         const newPath = path.includes('/app') ? '/app/dev/settings' : '/dev/settings';
         window.history.replaceState(null, '', newPath);
@@ -645,6 +648,8 @@ const App: React.FC = () => {
         );
       case AppState.AdminDashboard:
         return <AdminDashboard onBack={() => setAppState(AppState.Uploading)} />;
+      case AppState.ResearchDashboard:
+        return <ResearchDashboard onBack={() => setAppState(AppState.Uploading)} />;
       case AppState.DevSettings:
         return (
           <DevSettingsScreen

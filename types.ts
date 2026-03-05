@@ -71,6 +71,7 @@ export enum AppState {
   DevSettings, // 隠し設定画面用（追加）
   ImageQualityGate, // 画像品質チェック（追加）
   AdminDashboard, // 管理者ダッシュボード（追加）
+  ResearchDashboard, // 研究ダッシュボード（追加）
 }
 
 export enum RiskLevel {

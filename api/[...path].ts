@@ -14,6 +14,7 @@ import report_summaryByRole from '../api-src/report_ops/summaryByRole.js';
 import report_confidence from '../api-src/report_ops/confidence.js';
 import report_heatmap from '../api-src/report_ops/heatmap.js';
 import save_observation from '../api-src/research_ops/save_observation.js';
+import dashboard_data from '../api-src/research_ops/dashboard_data.js';
 import health from '../api-src/health_service.js';
 
 const handlers: Record<string, any> = {
@@ -22,6 +23,7 @@ const handlers: Record<string, any> = {
     'research_debug': research_debug,
     'research': research,
     'research/save_observation': save_observation,
+    'research/dashboard_data': dashboard_data,
     'token': token,
     'review/create': review_create,
     'review/submit': review_submit,

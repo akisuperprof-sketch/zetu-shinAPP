@@ -6,30 +6,60 @@ import DataCoveragePanel from './DataCoveragePanel';
 import { isFeatureEnabled } from '../utils/featureFlags';
 
 interface ResearchDashboardProps {
-    records: ObservationData[]; // Will be fetched from backend normally, but we accept it as props for now
+    records?: ObservationData[];
+    onBack?: () => void;
 }
 
-const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records }) => {
+const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }) => {
     const [allTimeMetrics, setAllTimeMetrics] = useState<ResearchMetrics | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [fetchedRecords, setFetchedRecords] = useState<ObservationData[]>([]);
 
     useEffect(() => {
         if (!isFeatureEnabled('FEATURE_RESEARCH_DASHBOARD')) return;
-        if (records) {
-            setAllTimeMetrics(calculateMetrics(records));
-        }
+
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                let dataToUse = records;
+                if (!dataToUse || dataToUse.length === 0) {
+                    const res = await fetch('/api/research/dashboard_data');
+                    if (res.ok) {
+                        dataToUse = await res.json();
+                    } else {
+                        dataToUse = [];
+                    }
+                }
+                setFetchedRecords(dataToUse || []);
+                setAllTimeMetrics(calculateMetrics(dataToUse || []));
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
     }, [records]);
 
     if (!isFeatureEnabled('FEATURE_RESEARCH_DASHBOARD')) return null;
-    if (!allTimeMetrics) return <div className="p-4 text-center">Loading Data...</div>;
+    if (loading || !allTimeMetrics) return <div className="p-8 text-center animate-pulse text-slate-500">Loading Data...</div>;
 
     const labeledPercent = (allTimeMetrics.labeled_rate * 100).toFixed(1);
     const validPercent = (allTimeMetrics.valid_rate * 100).toFixed(1);
 
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-8 animate-fade-in font-noto">
-            <h2 className="text-2xl font-black text-[#1F3A5F] mb-6 flex items-center gap-2 tracking-tight">
-                <span className="text-3xl">🔬</span> Research Dashboard v1.3
-            </h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-black text-[#1F3A5F] flex items-center gap-2 tracking-tight">
+                    <span className="text-3xl">🔬</span> Research Dashboard v1.3
+                </h2>
+                {onBack && (
+                    <button onClick={onBack} className="text-sm bg-slate-200 hover:bg-slate-300 px-4 py-2 rounded-lg transition-colors font-bold text-slate-700">
+                        戻る
+                    </button>
+                )}
+            </div>
 
             {/* Alerts if any thresholds are exceeded */}
             {isFeatureEnabled('FEATURE_RESEARCH_ALERTS') && (
@@ -58,7 +88,7 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records }) => {
 
             {/* Coverage Panel */}
             {isFeatureEnabled('FEATURE_DATA_COVERAGE') && (
-                <DataCoveragePanel metrics={allTimeMetrics} rawRecords={records} />
+                <DataCoveragePanel metrics={allTimeMetrics} rawRecords={fetchedRecords} />
             )}
 
             {/* Exclusion Reasons */}
