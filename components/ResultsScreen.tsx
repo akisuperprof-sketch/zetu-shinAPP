@@ -245,10 +245,33 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
         </div>
       )}
 
+      {/* 🔬 ROI Debug View (Feature Flagged + Dev Only) */}
+      {isFeatureEnabled('FEATURE_ROI_DEBUG_VIEW') && (import.meta.env.DEV || (typeof window !== 'undefined' && window.location.hostname !== 'zetu-shin-app.vercel.app')) && uploadedImages[0] && (
+        <div className="max-w-2xl mx-auto px-6 mb-12 animate-fade-in-up delay-[200ms]">
+          <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 shadow-xl overflow-hidden">
+            <h4 className="text-[12px] font-black text-rose-400 flex items-center gap-2 mb-4 tracking-widest uppercase">
+              <span className="text-[14px]">🟩</span> ROI DEBUG VIEW
+            </h4>
+            <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-black/50 mx-auto max-w-[300px]">
+              <img src={uploadedImages[0].previewUrl} alt="roi_debug" className="w-full h-full object-cover opacity-80" />
+              <div
+                className="absolute border-2 border-green-500 bg-green-500/20 pointer-events-none"
+                style={{
+                  top: '25%', left: '25%', width: '50%', height: '50%'
+                }}
+              />
+            </div>
+            {imageFeatures?.roi_failed && (
+              <p className="text-center text-rose-500 text-[11px] font-bold mt-3">※ ROIマッチ失敗（HOLD_QUALITY / Fallback処理）</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 🔬 Observation Input UI (Feature Flagged) */}
       {isFeatureEnabled('FEATURE_OBSERVATION_INPUT') && (
         <div className="max-w-2xl mx-auto px-6 mb-12 animate-fade-in-up delay-300">
-          <ObservationInputPanel analysisId={result.savedId} />
+          <ObservationInputPanel analysisId={result.savedId} imageFeatures={imageFeatures} />
         </div>
       )}
 

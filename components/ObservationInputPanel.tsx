@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { EXPERT_PATTERNS, TONGUE_COLORS, COAT_THICKNESSES, COAT_COLORS, MOISTURES, ExpertPatternType } from '../constants/expertPattern';
 import { getSession } from '../utils/userSession';
 import { isFeatureEnabled } from '../utils/featureFlags';
+import { ImageFeatures } from '../services/features/imageFeatures';
 
 interface ObservationInputPanelProps {
     analysisId?: string;
+    imageFeatures?: ImageFeatures | null;
     onSave?: (data: any) => void;
 }
 
-const ObservationInputPanel: React.FC<ObservationInputPanelProps> = ({ analysisId, onSave }) => {
+const ObservationInputPanel: React.FC<ObservationInputPanelProps> = ({ analysisId, imageFeatures, onSave }) => {
     const [tongueColor, setTongueColor] = useState<string>('不明');
     const [coatThickness, setCoatThickness] = useState<string>('不明');
     const [coatColor, setCoatColor] = useState<string>('不明');
@@ -33,7 +35,13 @@ const ObservationInputPanel: React.FC<ObservationInputPanelProps> = ({ analysisI
             return;
         }
 
-        const payload = { tongueColor, coatThickness, coatColor, moisture, pattern, anonId: session.anonId };
+        const quality_flags = {
+            roi_failed: imageFeatures?.roi_failed || false,
+            blur_score: imageFeatures?.blur_score || 0,
+            brightness_mean: imageFeatures?.brightness_mean || 0,
+        };
+
+        const payload = { tongueColor, coatThickness, coatColor, moisture, pattern, anonId: session.anonId, quality_flags };
 
         if (onSave) {
             onSave(payload);

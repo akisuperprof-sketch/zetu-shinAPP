@@ -85,9 +85,9 @@ describe('ImageFeatures extraction', () => {
         const dummyFile = new File([''], 'test.png', { type: 'image/png' });
         const result = await extractImageFeatures(dummyFile);
 
-        expect(Number.isNaN(result.color_r_mean)).toBe(false);
-        expect(Number.isNaN(result.redness_score)).toBe(false);
-        expect(result.color_r_mean).toBe(150); // Falls back or tests ROI
+        expect(result.color_r_mean).toBeNull();
+        expect(result.redness_score).toBeNull();
+        expect(result.roi_failed).toBe(true);
 
         vi.stubGlobal('localStorage', {
             getItem: () => null

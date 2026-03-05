@@ -81,6 +81,7 @@ export const FEATURES: FeatureFlags = {
     FEATURE_OBSERVATION_INPUT: false,
     FEATURE_ROI_V0: false,
     FEATURE_OBSERVATION_LOG: false,
+    FEATURE_ROI_DEBUG_VIEW: false,
 };
 
 /**

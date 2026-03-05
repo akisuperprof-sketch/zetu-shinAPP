@@ -87,19 +87,22 @@ export async function extractImageFeatures(file: File): Promise<ImageFeatures> {
                     }
 
                     if (useRoi && validPixelCount < 100) {
-                        // ROI抽出失敗時はフォールバック（全体）へ倒すが、フラグは立てる
-                        roi_failed = true;
-                        validPixelCount = 0;
-                        rSum = 0; gSum = 0; bSum = 0; graySum = 0;
-                        brightnessValues = [];
-                        for (let i = 0; i < data.length; i += 4) {
-                            const r = data[i]; const g = data[i + 1]; const b = data[i + 2];
-                            const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-                            rSum += r; gSum += g; bSum += b; graySum += brightness;
-                            brightnessValues.push(brightness);
-                            validPixelCount++;
-                        }
-                        if (validPixelCount === 0) throw new Error("No pixel data even in fallback");
+                        // ROI抽出失敗時はHOLD_QUALITY扱いとして、特徴量は全てnullにする
+                        return resolve({
+                            brightness_mean: 0,
+                            contrast: 0,
+                            saturation_mean: 0,
+                            sharpness: 0,
+                            blur_score: 0,
+                            tongue_area_ratio: null,
+                            whiteness_ratio: null,
+                            yellowness_ratio: null,
+                            color_r_mean: null,
+                            color_g_mean: null,
+                            color_b_mean: null,
+                            redness_score: null,
+                            roi_failed: true
+                        });
                     }
 
                     const brightness_mean = graySum / validPixelCount;
