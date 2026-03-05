@@ -171,3 +171,10 @@ export interface HistoryRecord {
 }
 
 export type PlanType = 'free' | 'light' | 'pro_personal' | 'student_program';
+
+export interface FeatureFlags {
+  SHARE_CARD: boolean;     // 共有カード（SNS拡散用）
+  TYPE_CHART: boolean;     // 体質推移チャート
+  TYPE_MAP: boolean;       // 地域別体質マップ
+  INVITE_FRIEND: boolean;  // 友達招待機能
+}
