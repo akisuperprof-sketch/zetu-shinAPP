@@ -187,4 +187,8 @@ export interface FeatureFlags {
   FEATURE_RESEARCH_DASHBOARD: boolean; // 研究ダッシュボードの表示
   FEATURE_RESEARCH_ALERTS: boolean; // 研究収集行動のガイド
   FEATURE_DATA_COVERAGE: boolean; // データ不足箇所の可視化
+  FEATURE_EXPERT_EVALUATION: boolean;
+  FEATURE_VISION_EXTRACTOR: boolean;
+  FEATURE_HEAT_COLD_ESTIMATOR: boolean;
+  FEATURE_QUALITY_SCORE: boolean;
 }
