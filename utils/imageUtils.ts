@@ -5,6 +5,7 @@
  * @param maxWidth Max width/height (default 1024)
  * @param quality JPEG quality (0 to 1, default 0.8)
  * @returns Promise resolving to a compressed File object
+ * @note This function strips EXIF metadata (GPS, etc.) by drawing to a canvas.
  */
 export const compressImage = async (file: File, maxWidth = 1024, quality = 0.8): Promise<File> => {
     return new Promise((resolve, reject) => {

@@ -58,6 +58,9 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [devMode, setDevMode] = useState(isDevEnabled());
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>(AnalysisMode.Standard);
+  const [session, setSession] = useState(() => getSession());
+  const refreshSession = useCallback(() => setSession(getSession()), []);
+
   const [qualityReason, setQualityReason] = useState<string>("");
   const [showDevFlagBanner, setShowDevFlagBanner] = useState(false);
 
@@ -118,8 +121,9 @@ const App: React.FC = () => {
   }, []);
 
   const handleNicknameComplete = useCallback(() => {
+    refreshSession();
     setAppState(AppState.Disclaimer);
-  }, []);
+  }, [refreshSession]);
 
   const handleAgree = useCallback(() => {
     setAppState(AppState.UserInfo);
@@ -555,7 +559,7 @@ const App: React.FC = () => {
       case AppState.NicknameSetup:
         return <NicknameSetup onComplete={handleNicknameComplete} />;
       case AppState.Disclaimer:
-        return <DisclaimerScreen onAgree={handleAgree} nickname={getSession()?.nickname} />;
+        return <DisclaimerScreen onAgree={handleAgree} nickname={session?.nickname} />;
       case AppState.UserInfo:
         return <UserInfoScreen onNext={handleUserInfoSubmit} />;
       case AppState.Uploading:
@@ -649,7 +653,7 @@ const App: React.FC = () => {
           </h1>
           <div className="flex items-center space-x-2 mt-1">
             <p className={`text-[10px] font-bold uppercase tracking-widest ${isPro ? 'text-blue-400/60' : 'text-slate-400'}`}>
-              {hasSession() ? getGreeting() : 'セルフコンディション観測ツール'} {isDevEnabled() && <span className="text-orange-500 font-black">[DEV]</span>}
+              {session ? getGreeting() : 'セルフコンディション観測ツール'} {isDevEnabled() && <span className="text-orange-500 font-black">[DEV]</span>}
             </p>
           </div>
         </div>
@@ -711,7 +715,11 @@ const App: React.FC = () => {
         analysisMode={analysisMode}
         setAnalysisMode={setAnalysisMode}
         planType={planType}
-        onLogout={() => setAppState(AppState.Splash)}
+        onSessionUpdate={refreshSession}
+        onLogout={() => {
+          refreshSession();
+          setAppState(AppState.Splash);
+        }}
       />
 
       <footer className="w-full max-w-4xl mt-12 pb-8 text-center text-[10px] text-slate-400 px-6 leading-relaxed">

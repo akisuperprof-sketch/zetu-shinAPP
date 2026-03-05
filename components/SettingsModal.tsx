@@ -13,6 +13,7 @@ interface SettingsModalProps {
     setAnalysisMode?: (mode: AnalysisMode) => void;
     planType?: PlanType;
     onLogout?: () => void;
+    onSessionUpdate?: () => void;
 }
 
 const PLAN_LABELS: Record<string, { label: string; desc: string; badge: string }> = {
@@ -22,7 +23,7 @@ const PLAN_LABELS: Record<string, { label: string; desc: string; badge: string }
     student_program: { label: 'Student Program', desc: '学生先行テスト', badge: 'STUDENT' },
 };
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, devMode, setDevMode, analysisMode, setAnalysisMode, planType, onLogout }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, devMode, setDevMode, analysisMode, setAnalysisMode, planType, onLogout, onSessionUpdate }) => {
     if (!isOpen) return null;
 
     // 本番では isDevEnabled()=false（import.meta.env.PRODハードガード）
@@ -37,8 +38,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, devMode,
         if (trimmed && trimmed.length <= 20) {
             updateNickname(trimmed);
             setEditingNickname(false);
-            // Refresh to apply nickname change
-            window.location.reload();
+            onSessionUpdate?.();
         }
     };
 
@@ -47,7 +47,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, devMode,
             clearSession();
             onLogout?.();
             onClose();
-            window.location.reload();
         }
     };
 
@@ -151,7 +150,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, devMode,
                         <p className="text-[10px] text-slate-400 font-mono">
                             {typeof (window as any).__BUILD_INFO__ !== 'undefined'
                                 ? `${(window as any).__BUILD_INFO__.version} / sha:${(window as any).__BUILD_INFO__.sha}`
-                                : 'build info unavailable'}
+                                : (document.querySelector('footer')?.innerText.match(/ver\d+.*\/.*sha:[a-z0-9]+/i) || ['build info unavailable'])[0]}
                         </p>
                     </div>
 

@@ -47,6 +47,7 @@
   - `analyses`: anon_id, answers_json, questionnaire_version, scores, timestamp
 - 年齢/性別/主訴は研究価値が高いので収集する（最小原則）
 - 追加時は `docs/research_min_schema.md` に version 付きで追記
+- 画像のEXIFデータ（GPS含む）はアップロード前にクライアントサイドで除去（`compressImage`/Canvas経由で実装済み）
 
 ## 5. 診断コアロジック変更禁止
 

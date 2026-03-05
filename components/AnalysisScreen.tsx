@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getSession } from '../utils/userSession';
 
 interface AnalysisErrorDetails {
   requestId: string;
@@ -219,7 +220,9 @@ const AnalysisScreen: React.FC<AnalysisScreenProps> = ({ error, retryCount = 0, 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[400px]">
       <div className="w-16 h-16 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-      <h2 className="text-2xl font-bold text-brand-primary mt-6">AIが解析中です...</h2>
+      <h2 className="text-xl sm:text-2xl font-bold text-brand-primary mt-6 text-center">
+        {getSession()?.nickname ? `${getSession()!.nickname}さんの舌を` : ''}AIが解析中です...
+      </h2>
       <p className="text-slate-600 mt-2 text-center max-w-sm">
         アップロードされた画像を分析しています。結果が表示されるまで、しばらくお待ちください。
       </p>
