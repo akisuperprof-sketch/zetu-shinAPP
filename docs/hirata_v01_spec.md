@@ -63,3 +63,8 @@
 *   `temp_score >= +1` かつ `defex_score <= 0` → `KYONETSU`
 *   それ以外 → `HOLD` (`HOLD_BORDER`)
 *   矛盾や紫黒などの重症サインがある場合は `HOLD_CONFLICT`
+
+## 6. Reference (基準資料) の扱い
+*   `project/reference/` 配下に格納される画像（例: `tongue_color_spectrum.png` 等の教科書画像）は、**Atlas（AI学習データ）としては使用せず、Reference（判定基準の目視確認用やUI表示用の静的リソース）** として扱います。
+*   このReference上の「寒 → 正常 → 熱」の連続的な色合いの軸を、本アルゴリズムの `temp_score` へマッピングする方針とします（具体的な数値レンジは段階的に調整）。
+*   Reference上の連続的な色合いにおいて境界が曖昧なケースは、安全側に倒すため原則として `HOLD_BORDER` へ逃がす（保留とする）方針を基本とします。

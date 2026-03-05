@@ -278,6 +278,38 @@ const App: React.FC = () => {
       return;
     }
 
+    const userRole = localStorage.getItem('role') || 'FREE';
+    const anonId = session?.anonId || 'unknown';
+
+    // --- [TASK 2: Analysis Limit Check (Edge Function)] ---
+    // 絶対順守：画像処理・推論の「事前」に呼び出してブロックする
+    setAppState(AppState.Analyzing); // To show loading early
+    if (userRole === 'FREE' || userRole === 'general') {
+      try {
+        const limitRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify_limits`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({ anon_id: anonId, plan_type: planType })
+        });
+        if (limitRes.ok) {
+          const limitData = await limitRes.json();
+          if (!limitData.allowed) {
+            setAnalysisError({
+              code: 'LIMIT_EXCEEDED',
+              message_public: '今月の解析回数制限（3回）を超えました。来月またご利用ください。',
+              retryable: false
+            });
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("Limit check failed, continuing anyway (best effort):", e);
+      }
+    }
+
     // 1. Image Quality Guard (Skip if DUMMY)
     if (!isDummy) {
       const checkResults = await Promise.all(uploadedImages.map(async (img) => {
@@ -370,37 +402,8 @@ const App: React.FC = () => {
 
       const files = uploadedImages.map(img => img.file);
       const currentMode = currentEffectivePlan;
-      const userRole = localStorage.getItem('role') || 'FREE';
-      const anonId = session?.anonId || 'unknown';
+      // userRole and anonId are now defined at the top of handleHearingNext
 
-      // --- [TASK 2: Analysis Limit Check (Edge Function)] ---
-      // Only check for non-pro/non-student roles (e.g. general/FREE)
-      if (userRole === 'FREE' || userRole === 'general') {
-        try {
-          const limitRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify_limits`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-            },
-            body: JSON.stringify({ anon_id: anonId, plan_type: planType })
-          });
-          if (limitRes.ok) {
-            const limitData = await limitRes.json();
-            if (!limitData.allowed) {
-              setAnalysisError({
-                code: 'LIMIT_EXCEEDED',
-                message_public: '今月の解析回数制限（3回）を超えました。来月またご利用ください。',
-                retryable: false
-              });
-              setAppState(AppState.Analyzing);
-              return;
-            }
-          }
-        } catch (e) {
-          console.warn("Limit check failed, continuing anyway (best effort):", e);
-        }
-      }
 
       const result = await routeTongueAnalysis(files, userInfo, currentMode, userRole);
 
