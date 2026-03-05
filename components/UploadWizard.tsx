@@ -6,6 +6,7 @@ import CameraCapture from './CameraCapture';
 import CameraGuideDev from './CameraGuideDev';
 import StreakBadge from './StreakBadge';
 import TutorialScreen from './TutorialScreen';
+import { isDevEnabled } from '../utils/devFlags';
 
 interface UploadWizardProps {
   onStartAnalysis: (images: UploadedImage[]) => void;
@@ -295,8 +296,8 @@ const UploadWizard: React.FC<UploadWizardProps> = ({ onStartAnalysis, devMode, d
         <h2 className="text-2xl font-bold text-brand-primary">舌の画像を撮影</h2>
         <p className="text-slate-600 mt-1 mb-4">画像をアップロードしてください</p>
 
-        {/* モード切替は DEV or debug=1 のみ表示（Phase1は「シンプル」固定） */}
-        {(import.meta.env.DEV || (typeof window !== 'undefined' && window.location.search.includes('debug=1'))) && (
+        {/* モード切替は DEV のみ表示（Phase1は「シンプル」固定） */}
+        {isDevEnabled() && (
           <div className="inline-flex bg-slate-100 p-1 rounded-lg text-sm font-bold shadow-inner">
             <button
               onClick={() => setIsSimpleMode(true)}

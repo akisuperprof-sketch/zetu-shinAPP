@@ -2,6 +2,7 @@
 import React from 'react';
 
 import { AnalysisMode } from '../types';
+import { isDevEnabled } from '../utils/devFlags';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -15,8 +16,8 @@ interface SettingsModalProps {
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, devMode, setDevMode, analysisMode, setAnalysisMode }) => {
     if (!isOpen) return null;
 
-    // 本番環境では DEV 機能を完全に隠蔽（復元可能：条件を外せば元に戻る）
-    const isDevToolsVisible = import.meta.env.DEV || (typeof window !== 'undefined' && window.location.search.includes('debug=1'));
+    // 本番では isDevEnabled()=false（import.meta.env.PRODハードガード）
+    const isDevToolsVisible = isDevEnabled();
 
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>

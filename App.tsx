@@ -17,7 +17,7 @@ import { routeTongueAnalysis } from './services/tongueAnalyzerRouter';
 import { analyzeImageQuality } from './utils/imageQualityAnalyzer';
 import { saveHistory, getHistoryItem, reconstructFindings, reconstructImages, saveLastUserInfo } from './services/historyService';
 import DevSettingsScreen from './components/DevSettingsScreen';
-import { isDevEnabled } from './utils/devFlags';
+import { isDevEnabled, purgeDevFlagsInProd } from './utils/devFlags';
 import { colors } from './styles/tokens';
 import { updateStreak } from './utils/streak';
 import { pushHistoryMini } from './utils/historyMini';
@@ -94,6 +94,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     checkApiHealth();
+    // Layer 2: 本番でDEVフラグ残骸を静かに消去
+    purgeDevFlagsInProd();
   }, [checkApiHealth]);
 
   // Force Pro Mode from localStorage (DEV ONLY)
@@ -140,24 +142,8 @@ const App: React.FC = () => {
       }
     }
 
-    // Safety check for production
-    if (!import.meta.env.DEV && typeof window !== 'undefined' && !window.location.search.includes('debug=1')) {
-      const hasForcePro = localStorage.getItem("FORCE_PRO") === "true";
-      const hasDummy = localStorage.getItem("DUMMY_TONGUE") === "true";
-      const hasMock = localStorage.getItem("MOCK_AI") === "true";
-      const hasDebugAutoTest = localStorage.getItem("DEBUG_AUTO_TEST") === "v1";
-      const hasDummyPreset = !!localStorage.getItem("DUMMY_PRESET");
-
-      if (hasForcePro || hasDummy || hasMock || hasDebugAutoTest || hasDummyPreset) {
-        console.error("CRITICAL: DEV flags detected in production! Disabling.");
-        setShowDevFlagBanner(true);
-        localStorage.removeItem("FORCE_PRO");
-        localStorage.removeItem("DUMMY_TONGUE");
-        localStorage.removeItem("MOCK_AI");
-        localStorage.removeItem("DEBUG_AUTO_TEST");
-        localStorage.removeItem("DUMMY_PRESET");
-      }
-    }
+    // Safety check: purgeDevFlagsInProd() handles this now (called in initial useEffect)
+    // No need for duplicate logic here.
 
     const handleLocationCheck = () => {
       const path = window.location.pathname;
@@ -650,7 +636,7 @@ const App: React.FC = () => {
           </h1>
           <div className="flex items-center space-x-2 mt-1">
             <p className={`text-[10px] font-bold uppercase tracking-widest ${isPro ? 'text-blue-400/60' : 'text-slate-400'}`}>
-              セルフコンディション観測ツール {import.meta.env.DEV && <span className="text-orange-500 font-black">[DEV]</span>}
+              セルフコンディション観測ツール {isDevEnabled() && <span className="text-orange-500 font-black">[DEV]</span>}
             </p>
           </div>
         </div>
@@ -658,11 +644,11 @@ const App: React.FC = () => {
         <div className="flex items-center space-x-3">
           {/* Unified Plan Badge */}
           <div className={`px-2 py-1 rounded-[4px] text-[10px] font-black uppercase tracking-wider border transition-all flex items-center space-x-1 ${isPro
-            ? (import.meta.env.DEV ? 'bg-[#0F1C2E] text-[#2E6F5E] border-[#2E6F5E] shadow-[0_0_15px_rgba(46,111,94,0.4)]' : 'bg-slate-800/50 text-white border-white/10 backdrop-blur-md')
-            : (import.meta.env.DEV ? 'bg-slate-200 text-slate-600 border-slate-300' : 'bg-slate-100 text-slate-600 border-slate-200 shadow-sm')
-            } ${import.meta.env.DEV ? 'scale-110' : ''}`}>
+            ? (isDevEnabled() ? 'bg-[#0F1C2E] text-[#2E6F5E] border-[#2E6F5E] shadow-[0_0_15px_rgba(46,111,94,0.4)]' : 'bg-slate-800/50 text-white border-white/10 backdrop-blur-md')
+            : (isDevEnabled() ? 'bg-slate-200 text-slate-600 border-slate-300' : 'bg-slate-100 text-slate-600 border-slate-200 shadow-sm')
+            } ${isDevEnabled() ? 'scale-110' : ''}`}>
             <span>PLAN: {isPro ? 'PRO' : 'FREE'}</span>
-            {import.meta.env.DEV && (
+            {isDevEnabled() && (
               <>
                 {localStorage.getItem("FORCE_PRO") === "true" && <span className="bg-[#B84C3A] text-white px-1 rounded-[2px] ml-1 text-[8px]">TRIAL</span>}
                 {localStorage.getItem("DUMMY_TONGUE") === "true" && <span className="bg-red-600 text-white px-1 rounded-[2px] ml-1 text-[8px]">DUMMY</span>}
@@ -732,12 +718,17 @@ const App: React.FC = () => {
           )}
         </div>
       </footer>
-      <DevControlCenter />
-      <DebugPanel plan={currentEffectivePlan} />
-      {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1' && researchStatus && (
-        <div className="fixed bottom-12 right-2 text-[8px] font-mono text-white bg-black/60 px-2 py-1 rounded z-50 pointer-events-none">
-          RESEARCH: {researchStatus}
-        </div>
+      {/* DEV専用コンポーネント: 本番では isDevEnabled()=false のため一切レンダリングされない */}
+      {isDevEnabled() && (
+        <>
+          <DevControlCenter />
+          <DebugPanel plan={currentEffectivePlan} />
+          {researchStatus && (
+            <div className="fixed bottom-12 right-2 text-[8px] font-mono text-white bg-black/60 px-2 py-1 rounded z-50 pointer-events-none">
+              RESEARCH: {researchStatus}
+            </div>
+          )}
+        </>
       )}
     </div >
   );
