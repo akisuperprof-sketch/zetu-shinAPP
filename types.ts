@@ -183,4 +183,7 @@ export interface FeatureFlags {
   FEATURE_ROI_V0: boolean; // ROI(関心領域)抽出アルゴリズムv0
   FEATURE_OBSERVATION_LOG: boolean; // 観察入力ログの保存(研究用)
   FEATURE_ROI_DEBUG_VIEW: boolean; // ROIデバッグ表示(研究用)
+  FEATURE_RESEARCH_DASHBOARD: boolean; // 研究ダッシュボードの表示
+  FEATURE_RESEARCH_ALERTS: boolean; // 研究収集行動のガイド
+  FEATURE_DATA_COVERAGE: boolean; // データ不足箇所の可視化
 }

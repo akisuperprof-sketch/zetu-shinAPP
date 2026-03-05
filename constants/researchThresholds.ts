@@ -1,0 +1,7 @@
+export const RESEARCH_THRESHOLDS = {
+    HOLD_RATE_ALERT: 0.2, // 20%
+    ROI_FAIL_ALERT: 0.15, // 15%
+    BLUR_MIN: 15,
+    BRIGHTNESS_MIN: 80,
+    BRIGHTNESS_MAX: 220,
+};

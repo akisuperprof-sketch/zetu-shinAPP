@@ -71,16 +71,29 @@ describe('ImageFeatures extraction', () => {
 
     test('It falls back and prevents NaN when ROI logic fails (no pixels match)', async () => {
         // Feature flag ON
+        vi.stubGlobal('window', {});
         vi.stubGlobal('localStorage', {
             getItem: (key: string) => key === 'FEATURE_ROI_V0' ? '1' : null
         });
 
-        // Our mock returns 150,100,50 everywhere.
-        // The ROI logic filters for isReddish: r > g && r > b && (r - Math.min(g, b)) > 10.
-        // For 150, 100, 50, (r - min)= 150-50 = 100 > 10.
-        // We need a test where pixels FAIL the ROI logic to see the fallback. 
-        // We'll trust the main test to act as successful ROI (since it matches).
-        // Let's test the successful ROI fallback mechanism separately or just check that setting the flag doesn't introduce NaNs.
+        // We can just temporarily override the document.createElement mock so that it returns 0 valid pixels.
+        vi.stubGlobal('document', {
+            createElement: (tag: string) => {
+                if (tag === 'canvas') {
+                    return {
+                        width: 10,
+                        height: 10,
+                        getContext: () => ({
+                            drawImage: vi.fn(),
+                            getImageData: vi.fn().mockImplementation((x, y, w, h) => {
+                                const data = new Uint8ClampedArray(w * h * 4).fill(0); // black pixels will fail red check
+                                return { data };
+                            })
+                        })
+                    };
+                }
+            }
+        });
 
         const dummyFile = new File([''], 'test.png', { type: 'image/png' });
         const result = await extractImageFeatures(dummyFile);
@@ -88,10 +101,6 @@ describe('ImageFeatures extraction', () => {
         expect(result.color_r_mean).toBeNull();
         expect(result.redness_score).toBeNull();
         expect(result.roi_failed).toBe(true);
-
-        vi.stubGlobal('localStorage', {
-            getItem: () => null
-        });
     });
 
     // We can also test the division by zero explicitly by mocking empty data, 
