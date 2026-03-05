@@ -59,6 +59,7 @@ export interface AnalysisV2Payload {
 
 export enum AppState {
   Splash,
+  NicknameSetup, // L1ログイン（ニックネーム入力）
   Disclaimer,
   UserInfo,
   Uploading,
@@ -169,4 +170,4 @@ export interface HistoryRecord {
   }[];
 }
 
-export type PlanType = 'light' | 'pro_personal';
+export type PlanType = 'free' | 'light' | 'pro_personal' | 'student_program';

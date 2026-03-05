@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import SplashScreen from './components/SplashScreen';
+import NicknameSetup from './components/NicknameSetup';
 import DisclaimerScreen from './components/DisclaimerScreen';
 import UserInfoScreen from './components/UserInfoScreen';
 import UploadWizard from './components/UploadWizard';
@@ -18,6 +19,7 @@ import { analyzeImageQuality } from './utils/imageQualityAnalyzer';
 import { saveHistory, getHistoryItem, reconstructFindings, reconstructImages, saveLastUserInfo } from './services/historyService';
 import DevSettingsScreen from './components/DevSettingsScreen';
 import { isDevEnabled, purgeDevFlagsInProd } from './utils/devFlags';
+import { hasSession, getSession, getGreeting } from './utils/userSession';
 import { colors } from './styles/tokens';
 import { updateStreak } from './utils/streak';
 import { pushHistoryMini } from './utils/historyMini';
@@ -107,6 +109,15 @@ const App: React.FC = () => {
   const currentEffectivePlan = isForcedPro ? AnalysisMode.Pro : (devMode ? analysisMode : AnalysisMode.Standard);
 
   const handleSplashComplete = useCallback(() => {
+    // 既にニックネーム設定済みならDisclaimerへスキップ
+    if (hasSession()) {
+      setAppState(AppState.Disclaimer);
+    } else {
+      setAppState(AppState.NicknameSetup);
+    }
+  }, []);
+
+  const handleNicknameComplete = useCallback(() => {
     setAppState(AppState.Disclaimer);
   }, []);
 
@@ -541,8 +552,10 @@ const App: React.FC = () => {
     switch (appState) {
       case AppState.Splash:
         return <SplashScreen onComplete={handleSplashComplete} />;
+      case AppState.NicknameSetup:
+        return <NicknameSetup onComplete={handleNicknameComplete} />;
       case AppState.Disclaimer:
-        return <DisclaimerScreen onAgree={handleAgree} />;
+        return <DisclaimerScreen onAgree={handleAgree} nickname={getSession()?.nickname} />;
       case AppState.UserInfo:
         return <UserInfoScreen onNext={handleUserInfoSubmit} />;
       case AppState.Uploading:
@@ -636,7 +649,7 @@ const App: React.FC = () => {
           </h1>
           <div className="flex items-center space-x-2 mt-1">
             <p className={`text-[10px] font-bold uppercase tracking-widest ${isPro ? 'text-blue-400/60' : 'text-slate-400'}`}>
-              セルフコンディション観測ツール {isDevEnabled() && <span className="text-orange-500 font-black">[DEV]</span>}
+              {hasSession() ? getGreeting() : 'セルフコンディション観測ツール'} {isDevEnabled() && <span className="text-orange-500 font-black">[DEV]</span>}
             </p>
           </div>
         </div>
@@ -697,6 +710,8 @@ const App: React.FC = () => {
         setDevMode={setDevMode}
         analysisMode={analysisMode}
         setAnalysisMode={setAnalysisMode}
+        planType={planType}
+        onLogout={() => setAppState(AppState.Splash)}
       />
 
       <footer className="w-full max-w-4xl mt-12 pb-8 text-center text-[10px] text-slate-400 px-6 leading-relaxed">
