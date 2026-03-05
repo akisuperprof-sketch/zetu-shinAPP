@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserInfo, Gender } from '../types';
 import { getLastUserInfo } from '../services/historyService';
 import { isDevEnabled, getSelectedPlan } from '../utils/devFlags';
+import { getSession } from '../utils/userSession';
 import liteQuestions from '../config/questionnaires/lite.json';
 
 interface UserInfoScreenProps {
@@ -146,7 +147,7 @@ const UserInfoScreen: React.FC<UserInfoScreenProps> = ({ onNext }) => {
 
   return (
     <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 animate-fade-in">
-      <h2 className="text-xl sm:text-2xl font-bold text-brand-primary mb-4 text-center">基本情報の入力</h2>
+      <h2 className="text-xl sm:text-2xl font-bold text-brand-primary mb-4 text-center">{getSession()?.nickname ? `${getSession()!.nickname}さんの` : ''}基本情報の入力</h2>
 
       {/* バリデーションエラーのサマリー（1画面で見える位置に） */}
       {Object.keys(errors).length > 0 && (

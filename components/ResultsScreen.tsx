@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DiagnosisResult, RiskLevel, UploadedImage, PlanType } from '../types';
 import FindingCard from './FindingCard';
 import { getConditionType } from '../utils/typeMapper';
+import { getSession } from '../utils/userSession';
 import { getStreakData, getCelebrateMessage } from '../utils/streak';
 import StreakBadge from './StreakBadge';
 import { ShareCardData, generateShareCard } from '../utils/shareCard';
@@ -189,7 +190,7 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
           </div>
         )}
         <div className="text-center">
-          <p className="text-[#6FC3B2] text-[13px] font-black uppercase tracking-[0.5em] mb-4">今日のコンディション</p>
+          <p className="text-[#6FC3B2] text-[13px] font-black uppercase tracking-[0.5em] mb-4">{getSession()?.nickname ? `${getSession()!.nickname}さんの` : ''}今日のコンディション</p>
           <h1 className="text-[48px] font-black text-[#1F3A5F] tracking-tighter leading-tight mb-2">
             {finalTypeLabel}
           </h1>

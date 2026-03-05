@@ -101,6 +101,18 @@ const DisclaimerScreen: React.FC<DisclaimerScreenProps> = ({ onAgree, nickname }
             同意して観測を始める
           </button>
         </div>
+
+        {/* Research Info Link */}
+        <div className="mt-4 text-center">
+          <a
+            href="https://z-26.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-[#6FC3B2] hover:underline font-bold"
+          >
+            研究協力について詳しく見る →
+          </a>
+        </div>
       </div>
     </div>
   );
