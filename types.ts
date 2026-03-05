@@ -173,8 +173,9 @@ export interface HistoryRecord {
 export type PlanType = 'free' | 'light' | 'pro_personal' | 'student_program';
 
 export interface FeatureFlags {
-  FEATURE_SHARE_CARD: boolean;     // 共有カード（SNS拡散用）
-  TYPE_CHART: boolean;             // 体質推移チャート
-  TYPE_MAP: boolean;               // 地域別体質マップ
-  INVITE_FRIEND: boolean;          // 友達招待機能
+  FEATURE_SHARE_CARD: boolean; // SNSシェアカード生成機能
+  TYPE_CHART: boolean;        // 五行タイプチャート
+  TYPE_MAP: boolean;          // マップ型結果表示
+  INVITE_FRIEND: boolean;     // 友人招待・チケット付与
+  FEATURE_HIRATA_V01: boolean; // 平田式アルゴリズムv0.1
 }

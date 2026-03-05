@@ -226,6 +226,20 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ result, onRestart, upload
         </div>
       )}
 
+      {/* 🔮 Hirata Algorithm v0.1 Data (Feature Flagged) */}
+      {isFeatureEnabled('FEATURE_HIRATA_V01') && (
+        <div className="max-w-2xl mx-auto px-6 mb-12">
+          <div className="bg-indigo-50/50 rounded-3xl p-6 border border-indigo-100 shadow-sm">
+            <h4 className="text-[12px] font-black text-indigo-800 flex items-center gap-2 mb-3 tracking-widest uppercase">
+              <span className="text-[14px]">🧪</span> 平田式アルゴリズム (v0.1) 検証中
+            </h4>
+            <div className="text-[11px] font-medium text-slate-600 leading-relaxed">
+              ※ この表示は `FEATURE_HIRATA_V01` フラグが有効な場合のみ表示されます。現在バックグラウンドで平田式オリジナル舌診アルゴリズム（寒熱虚実4分類）が稼働しています。
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 💬 Zetushin's Guidance (Character Hook) */}
       <div className="max-w-2xl mx-auto px-6 mb-20">
         <div className="bg-white rounded-[3rem] p-10 shadow-[0_20px_60px_rgba(31,58,95,0.05)] border border-slate-100 flex items-start gap-8">

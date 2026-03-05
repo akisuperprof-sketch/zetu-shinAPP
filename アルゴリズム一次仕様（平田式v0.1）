@@ -1,0 +1,302 @@
+0 このドキュメントの目的
+目的	内容
+壊れない構造の維持	LP/APP/Repo分離と本番DEV封印を絶対維持
+標準固定バグの解消	結果が毎回同じになる原因を最短で特定し是正
+平田式オリジナル v0.1実装	寒熱虚実（4分類）を安全に導入し検証可能にする
+研究データ価値設計の前提整備	匿名・EXIF削除・ラベル体系・保存項目を固定
+1 憲法（絶対変更禁止・再掲）
+領域	ルール
+ドメイン分離	LP: z-26.vercel.app はLP専用。/app /api は存在してはいけない（404であること）
+アプリ	APP: zetu-shin-app.vercel.app のみが AI解析・DB保存・EdgeFunction を持つ
+リポジトリ	z-26=LPのみ、zetu-shinAPP=アプリ本体
+本番DEV禁止	?debug=1、localStorage、DEV UI など本番無効（露出ゼロ）
+セキュリティ	EXIF削除、匿名ID、名前保存なし
+
+監査の期待値（必須）
+
+ID	テスト	期待
+A-01	LP /app	404
+A-02	LP /api/health	404
+A-03	LP assets	200
+A-04	APP /api/health	200
+2 現状の重要課題
+課題	症状	影響	最優先理由
+標準固定バグ	本番で結果画面がずっと同じ（歯科等が出ない）	検証不能	アルゴリズム設計しても検証が回らない
+平田式アルゴリズム未実装	寒熱虚実のコアが動いていない	価値の中核が未提供	研究データ収集の質が担保できない
+アトラス画像未整備	基準画像・期待値が揃っていない	学習/評価が遅い	ただし本番取り込みは時期尚早
+
+推奨結論
+・アトラス画像は今は本番に取り込まない（検証用10〜30枚台帳から開始）
+・まず標準固定バグを切り分けして「入力で結果が変わる」状態を作る
+・次に平田式v0.1を「新規ファイル追加のみ」で実装して検証開始
+
+3 平田式オリジナル アルゴリズム v0.1（確定仕様）
+3-1 目的と範囲
+項目	仕様
+分類	4分類のみ（寒熱×虚実）
+判定順序	舌色 → 苔 → 津液 → 形（あなた指定②=3）
+前提	既存の解析ロジック（coreEngine.ts等）を変更しない。追加実装のみ
+安全	曖昧・矛盾・撮影品質不良は「標準」に落とさず「保留」にする
+3-2 最終ラベル（確定）
+分類	ローマ字	表示
+実寒	JIKKAN	実寒
+虚寒	KYOKAN	虚寒
+実熱	JITSUNETSU	実熱
+虚熱	KYONETSU	虚熱
+保留	HOLD	保留（再撮影/追加情報）
+3-3 観察項目とラベル体系（資料準拠）
+カテゴリ	項目	ラベル
+舌色	tongue_color	淡白,淡紅,紅,絳,紫,黒
+苔色	coat_color	白,黄,灰,黒
+苔厚	coat_thickness	無,薄,厚
+津液	moisture	湿潤,乾燥
+形	tongue_form	胖嫩,老,歯痕,その他
+3-4 スコアリング（実装可能ルール）
+
+初期値
+
+軸	変数	初期
+寒熱	temp_score	0（寒=-、熱=+）
+虚実	defex_score	0（虚=-、実=+）
+
+舌色（初手・最重要）
+
+舌色	temp_score	フラグ
+淡白	-2	
+淡紅	0	
+紅	+2	
+絳	+3	
+紫	0	purple
+黒	0	black,severe
+
+苔色
+
+苔色	temp_score	フラグ
+白	-1	
+黄	+1	
+灰	+1	severe
+黒	+1	severe
+
+苔厚（虚実の主決定）
+
+苔厚	defex_score
+無	-2
+薄	0
+厚	+2
+
+津液
+
+津液	temp_score
+湿潤	-1
+乾燥	+1
+
+形
+
+形	defex_score
+胖嫩	-1
+歯痕	-1
+老	+1
+その他	0
+
+統合（4分類）
+
+条件	pattern
+temp_score<=-1 かつ defex_score>=+1	JIKKAN
+temp_score<=-1 かつ defex_score<=0	KYOKAN
+temp_score>=+1 かつ defex_score>=+1	JITSUNETSU
+temp_score>=+1 かつ defex_score<=0	KYONETSU
+それ以外	HOLD
+
+保留コード（必須）
+
+コード	発火条件例	UI挙動
+HOLD_QUALITY	暗い/白飛び/ピンぼけ/色被り	再撮影ガイド
+HOLD_BORDER	temp_scoreが0近傍で判断困難	追加撮影/追加質問（将来）
+HOLD_CONFLICT	紫/黒など重症フラグ＋矛盾	専門家確認促し（非医療表現）
+
+重要：曖昧を標準へ落とす実装は禁止。標準固定バグの再発防止。
+
+4 実装方針（壊さない設計）
+4-1 新規ファイル追加（推奨）
+ファイル	役割	既存変更
+constants/tongueLabels.ts	ラベルSSOT（JIKKAN等）	新規のみ
+engine/hirataV01.ts	平田式v0.1スコアリング本体	新規のみ
+engine/tongueTypes.ts	型定義（Input/Output/Hold）	新規のみ
+engine/qualityGates.ts	品質ゲート（HOLD_QUALITY）	新規のみ
+docs/hirata_v01_spec.md	仕様書（この内容を保存）	新規のみ
+docs/atlas_min_dataset.md	最小アトラス台帳フォーマット	新規のみ
+
+既存のcoreEngine.tsは絶対に触らない。
+ResultsScreen.tsx への変更は「結果表示の切替」だけ（FeatureFlagで封印済みのまま）。
+
+4-2 FeatureFlag（誤公開防止）
+フラグ	既定	用途
+FEATURE_HIRATA_V01	false	平田式v0.1結果表示を封印
+FEATURE_SHARE_CARD	false	拡散UI封印
+TYPE_CHART	false	封印
+TYPE_MAP	false	封印
+INVITE_FRIEND	false	封印
+
+ハードロック：本番で勝手にONにならない構造維持。
+
+5 標準固定バグ（最短切り分け計画）
+
+目的：「入力が違えば中間スコア/出力が変わる」状態へ復帰すること。
+
+切り分け順（最短）
+
+優先	疑い	確認項目	最小対処
+1	推論が呼ばれてない	解析関数/Edge/APIが本番で実行されているか	呼び出し経路修正
+1	例外フォールバックで標準固定	catchで標準返却していないか	標準返却を禁止しHOLDに置換
+2	入力payloadが固定	画像/問診値が毎回同一になってないか	stateや送信経路修正
+3	前処理で画像が同一化	前処理後のハッシュが毎回同じ等	空画像検知/前処理修正
+4	デプロイが古い	本番コミットが最新か	再デプロイ
+
+重要運用
+・本番に永続ログ追加は禁止
+・必要なら短期トレース：画面にtrace_idを一時表示するだけ（保存しない）
+
+6 最小テスト（手動ラベルで先に回す）
+
+画像AIが未実装でも、手動でラベルを入力して v0.1を動かせるようにする。
+
+6-1 最小テストケース（必須）
+No	舌色	苔色	苔厚	津液	形	期待
+1	淡白	白	厚	湿潤	老	JIKKAN
+2	淡白	白	薄	湿潤	胖嫩	KYOKAN
+3	紅	黄	厚	乾燥	老	JITSUNETSU
+4	紅	白	無	乾燥	胖嫩	KYONETSU
+5	淡紅	白	薄	湿潤	その他	HOLD_BORDER
+6	紫	灰	厚	乾燥	老	HOLD_CONFLICT（v0.2で拡張）
+7	黒	黒	厚	乾燥	老	HOLD_CONFLICT（重症扱い）
+7 研究DBに保存すべき最小項目（匿名・価値最大化）
+
+既存の研究保存（画像/問診/解析結果）に加えて、舌診AIの価値を上げる項目を定義する。
+
+項目	型	目的
+analysis_id	uuid	追跡
+anon_user_id	text	匿名継続
+tongue_color	text	学習/検証
+coat_color	text	学習/検証
+coat_thickness	text	学習/検証
+moisture	text	学習/検証
+tongue_form	text	学習/検証
+temp_score	int	再現性評価
+defex_score	int	再現性評価
+pattern	text	目的変数
+hold_reason	text	null
+flags	jsonb	紫/黒など
+image_hash	text	重複検知（画像そのものは不要）
+
+禁止：氏名、住所、電話、メール、正確な位置情報。
+
+8 アトラス（今やるのは本番投入ではなく台帳化）
+
+推奨：最小10〜30枚から。
+目的：寒熱の境界が分かる「淡白/淡紅/紅/絳」を優先し、苔と津液も混ぜる。
+
+台帳フォーマット（docs/atlas_min_dataset.md に置く）
+
+項目	説明
+image_id	連番
+提供同意	研究利用範囲/保存期間/二次利用可否
+撮影条件	光源/距離/角度/食後など
+期待ラベル	tongue_color/coat_color/coat_thickness/moisture/tongue_form
+期待pattern	JIKKAN/KYOKAN/JITSUNETSU/KYONETSU/HOLD
+備考	紫/黒/矛盾など
+9 AGに依頼する具体タスク（そのまま実装できる粒度）
+
+下記をAGへ依頼（または自分でタスク化）すると、最短で前に進みます。
+
+9-1 タスク一覧（推奨順）
+順	タスク	成果物
+1	標準固定バグの原因特定（上の切り分け順で）	原因と最小修正PR
+2	平田式v0.1を新規ファイル追加で実装	engine/hirataV01.ts 等
+3	HOLD（保留）をUIに安全に反映（標準に落とさない）	ResultsScreenの最小修正
+4	最小テストケースを自動テスト化	unit test追加
+5	研究DBへ追加保存（必要なら）	migrationと保存処理
+10 AGへ貼る用の指示文（長文・コピペ1回用）
+
+以下は、あなたがAGに貼る場合の指示文です。ドキュメントとして保存してもOK。
+
+ーーーーーーーーーーーーーーーー
+目的：ZETUSHINの壊れない構造を維持したまま、標準固定バグを解消し、平田式オリジナル舌診アルゴリズム v0.1（寒熱虚実4分類）を追加実装して検証可能にする。絶対にcoreEngine.ts等の既存解析ロジックを変更しない。追加実装のみ。
+
+憲法（絶対遵守）
+・LP: z-26.vercel.app はLP専用。/app /api が存在してはいけない（404必須）
+・APP: zetu-shin-app.vercel.app のみがAI解析/DB保存/EdgeFunctionを持つ
+・本番でDEV要素禁止（?debug=1、localStorageバイパス、DEV UI露出ゼロ）
+・匿名ID、EXIF削除、氏名等は保存しない
+
+最優先課題：本番で結果がずっと同じ（標準固定）問題の切り分けと修正
+切り分け順：
+1 推論が本番で実行されているか（呼び出し経路）
+2 例外時フォールバックが標準固定になっていないか（標準返却は禁止）
+3 画像/問診payloadが毎回同一になってないか
+4 前処理で画像が同一化してないか（空画像/同一ハッシュ等）
+5 本番が最新コミットのデプロイか
+注意：本番永続ログ追加は禁止。必要なら短期トレースIDの画面表示のみ（保存しない）。
+
+平田式オリジナル舌診アルゴリズム v0.1（確定仕様）
+・分類：4分類（寒熱×虚実）＋保留HOLD
+・判定順序：舌色 → 苔 → 津液 → 形
+・最終ラベル（ローマ字固定）：
+実寒 JIKKAN、虚寒 KYOKAN、実熱 JITSUNETSU、虚熱 KYONETSU、保留 HOLD
+・観察項目ラベル：
+tongue_color: 淡白,淡紅,紅,絳,紫,黒
+coat_color: 白,黄,灰,黒
+coat_thickness: 無,薄,厚
+moisture: 湿潤,乾燥
+tongue_form: 胖嫩,老,歯痕,その他
+
+スコアリング
+初期：temp_score=0、defex_score=0
+舌色：
+淡白 -2、淡紅 0、紅 +2、絳 +3、紫 0（flag purple）、黒 0（flag black,severe）
+苔色：
+白 -1、黄 +1、灰 +1（flag severe）、黒 +1（flag severe）
+苔厚（虚実主決定）：
+無 -2、薄 0、厚 +2
+津液：
+湿潤 -1、乾燥 +1
+形：
+胖嫩 -1、歯痕 -1、老 +1、その他 0
+統合：
+temp<=-1 かつ defex>=+1 → JIKKAN
+temp<=-1 かつ defex<=0 → KYOKAN
+temp>=+1 かつ defex>=+1 → JITSUNETSU
+temp>=+1 かつ defex<=0 → KYONETSU
+それ以外 → HOLD
+重要：曖昧/矛盾/品質不良を「標準」に落とさずHOLDで返す（標準固定再発防止）。
+
+保留理由（最低限）
+HOLD_QUALITY（暗い/白飛び/ブレ/色被り）
+HOLD_BORDER（temp_scoreが0付近）
+HOLD_CONFLICT（紫/黒等＋矛盾）
+
+実装方針
+・既存ロジックは一切変更しない。新規ファイル追加のみで実装する
+推奨追加ファイル：
+constants/tongueLabels.ts（ラベルSSOT）
+engine/tongueTypes.ts（型）
+engine/qualityGates.ts（品質ゲート）
+engine/hirataV01.ts（スコアリング）
+docs/hirata_v01_spec.md（仕様書）
+docs/atlas_min_dataset.md（最小アトラス台帳フォーマット）
+・ResultsScreen.tsx にはFeatureFlagで封印された表示導線として最低限の追加のみ。誤公開禁止。
+
+最小テストケース（unit test化推奨）
+1 淡白/白/厚/湿潤/老 → JIKKAN
+2 淡白/白/薄/湿潤/胖嫩 → KYOKAN
+3 紅/黄/厚/乾燥/老 → JITSUNETSU
+4 紅/白/無/乾燥/胖嫩 → KYONETSU
+5 淡紅/白/薄/湿潤/その他 → HOLD_BORDER
+6 紫/灰/厚/乾燥/老 → HOLD_CONFLICT（v0.2で拡張）
+7 黒/黒/厚/乾燥/老 → HOLD_CONFLICT
+
+納品物
+・標準固定バグの原因と最小修正
+・平田式v0.1実装（新規ファイル追加）
+・unit test追加
+・監査スクリプトPASS維持（LP 404封印、APP 200、DEV露出ゼロ）
+ーーーーーーーーーーーーーーーー

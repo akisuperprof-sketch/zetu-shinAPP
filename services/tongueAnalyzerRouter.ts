@@ -40,7 +40,6 @@ export const routeTongueAnalysis = async (
         return analyzePro(images, userInfo);
     }
 
-    // デフォルトプラン設定等
     if (isDevEnabled()) {
         const selectedPlan = getSelectedPlan();
         switch (selectedPlan) {
@@ -51,9 +50,8 @@ export const routeTongueAnalysis = async (
         }
     }
 
-    if (mode === AnalysisMode.Pro) {
-        return analyzePro(images, userInfo, userRole);
-    }
-
-    return analyzeLite(images, userInfo, userRole);
+    // [BUG FIX] 本番環境（PROD）では、Free/Light等に依らず基本的にAI推論（Pro相当）を行う
+    // 過去、modeの不一致により意図せず analyzeLite（固定モック）へフォールバックしていた事象の解消
+    return analyzePro(images, userInfo, userRole);
 };
+

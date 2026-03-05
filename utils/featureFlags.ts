@@ -76,6 +76,7 @@ export const FEATURES: FeatureFlags = {
     TYPE_CHART: false,
     TYPE_MAP: false,
     INVITE_FRIEND: false,
+    FEATURE_HIRATA_V01: false,
 };
 
 /**
