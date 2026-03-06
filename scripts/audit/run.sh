@@ -46,9 +46,13 @@ check "A-04" "APP /api/health は200" "200" "$STATUS_04"
 # A-04b: APP health SHA
 APP_SHA=$(curl -s https://zetu-shin-app.vercel.app/api/health | grep -o '"sha":"[^"]*"' | head -1)
 
-# A-05: DOM検査は手動（curlではSPAのDOMを取得できないため）
-# → ブラウザ自動テスト or 別途 playwright で実施
-RESULTS="${RESULTS}\n| A-05 | DOM検査(DEV要素ゼロ) | - | 手動/Playwright | ⏳ 別途 |"
+# A-05: DOM検査 (Playwright)
+echo "Running Playwright for A-05 DOM inspection..."
+if npx playwright test tests/e2e/auditDOM.spec.ts --quiet; then
+  check "A-05" "DOM検査(DEV要素ゼロ)" "PASS" "PASS"
+else
+  check "A-05" "DOM検査(DEV要素ゼロ)" "PASS" "FAIL"
+fi
 
 echo ""
 echo "============================="
@@ -68,6 +72,6 @@ if [ "$FAIL" -gt 0 ]; then
   echo "❌ 監査FAIL — デプロイ前に修正が必要です"
   exit 1
 else
-  echo "✅ 全テストPASS（DOM検査は別途実施）"
+  echo "✅ 全テストPASS（DOM検査も完了）"
   exit 0
 fi

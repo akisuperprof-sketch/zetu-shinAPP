@@ -30,34 +30,15 @@ export const isResearchModeEnabled = (): boolean => {
  * Sets all DEV default flags and tags the profile version
  */
 export const setLatestDevFlags = () => {
-    if (typeof window === 'undefined') return;
-
-    ALL_FLAGS.forEach(flag => {
-        if (flag.devDefault !== null) {
-            window.localStorage.setItem(flag.key, flag.devDefault);
-        }
-    });
-    window.localStorage.setItem('DEV_FLAGS_PROFILE', FLAGS_LATEST_VERSION);
+    console.warn("setLatestDevFlags is deactivated to comply with production hard-lock rules.");
 };
 
-/**
- * Clears all predefined flags from local storage
- */
 export const clearAllDevFlags = () => {
-    if (typeof window === 'undefined') return;
-
-    ALL_FLAGS.forEach(flag => {
-        window.localStorage.removeItem(flag.key);
-    });
-    window.localStorage.removeItem('DEV_FLAGS_PROFILE');
+    console.warn("clearAllDevFlags is deactivated.");
 };
 
-/**
- * Convenience method to check a flag securely
- */
 export const isFlagEnabled = (key: string, expectedValue: string = '1'): boolean => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(key) === expectedValue;
+    return false; // LocalStorage flag lookup is strictly forbidden
 };
 
 // ==========================================
@@ -96,15 +77,22 @@ export const FEATURES: FeatureFlags = {
  * 機能が有効かどうかを判定する
  */
 export const isFeatureEnabled = (key: keyof FeatureFlags): boolean => {
-    // 本番環境でのハードロック
+    // 本番環境でのハードロック (オーバーライドは一切無視)
     if (IS_PROD) {
-        return (FEATURES[key] || (typeof window !== 'undefined' && window.localStorage.getItem(key) === '1')) && import.meta.env?.VITE_ENABLE_FUTURE_FEATURES === 'true';
+        return FEATURES[key];
     }
 
-    // 開発環境ではローカルストレージのオーバーライドを優先し、なければデフォルト値
-    if (typeof window !== 'undefined') {
-        const local = window.localStorage.getItem(key);
-        if (local === '1' || local === 'true') return true;
+    // 開発環境のみ Env Variable オーバーライドを許可
+    // VITE_DEV_FEATURE_OVERRIDES='{"FEATURE_RESEARCH_OS": true}'
+    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_DEV_FEATURE_OVERRIDES) {
+        try {
+            const overrides = JSON.parse(import.meta.env.VITE_DEV_FEATURE_OVERRIDES);
+            if (overrides[key] === true || overrides[key] === 'true' || overrides[key] === '1') {
+                return true;
+            }
+        } catch (e) {
+            console.error('Failed to parse VITE_DEV_FEATURE_OVERRIDES', e);
+        }
     }
 
     return FEATURES[key];
