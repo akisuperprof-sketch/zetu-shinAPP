@@ -77,10 +77,19 @@ export const FEATURES: FeatureFlags = {
 import { isAdminAuthenticated } from './adminAuthToken';
 
 /**
+ * 管理者研究コンテキスト（特定のルートかつ認証済み）かどうかを判定
+ */
+export const isAdminResearchContext = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const path = window.location.pathname;
+    return (path.includes('/admin/research') || path.includes('/admin/report')) && isAdminAuthenticated();
+};
+
+/**
  * 機能が有効かどうかを判定する
  */
 export const isFeatureEnabled = (key: keyof FeatureFlags): boolean => {
-    // 管理者認証済みの場合のみ、特定の研究機能を許可
+    // 管理者研究コンテキストの場合のみ、特定の研究機能を許可
     const researchFlags: (keyof FeatureFlags)[] = [
         'FEATURE_RESEARCH_DASHBOARD',
         'FEATURE_RESEARCH_IMAGE_INJECTION',
@@ -92,7 +101,7 @@ export const isFeatureEnabled = (key: keyof FeatureFlags): boolean => {
         'FEATURE_HEAT_COLD_ESTIMATOR'
     ];
 
-    if (researchFlags.includes(key) && isAdminAuthenticated()) {
+    if (researchFlags.includes(key) && isAdminResearchContext()) {
         return true;
     }
 
