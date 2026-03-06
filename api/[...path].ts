@@ -16,6 +16,7 @@ import report_heatmap from '../api-src/report_ops/heatmap.js';
 import save_observation from '../api-src/research_ops/save_observation.js';
 import dashboard_data from '../api-src/research_ops/dashboard_data.js';
 import health from '../api-src/health_service.js';
+import research_login from '../api-src/research_ops/login.js';
 
 const handlers: Record<string, any> = {
     'analyze': analyze,
@@ -24,6 +25,7 @@ const handlers: Record<string, any> = {
     'research': research,
     'research/save_observation': save_observation,
     'research/dashboard_data': dashboard_data,
+    'research/login': research_login,
     'token': token,
     'review/create': review_create,
     'review/submit': review_submit,

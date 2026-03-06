@@ -17,11 +17,12 @@ const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
         setLoading(true);
         setError(null);
 
+        const trimmedPassword = password.trim();
         try {
             const res = await fetch('/api/research/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password })
+                body: JSON.stringify({ password: trimmedPassword })
             });
 
             if (res.ok) {
@@ -29,8 +30,16 @@ const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
                 saveAdminToken(token);
                 setIsAuthenticated(true);
             } else {
-                const { error } = await res.json().catch(() => ({ error: 'Login failed' }));
-                setError(error || 'Invalid password');
+                if (res.status === 401) {
+                    setError('Invalid password');
+                } else if (res.status === 404) {
+                    setError('Login endpoint not available (404)');
+                } else if (res.status === 500) {
+                    setError('Server configuration error (500)');
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    setError(data.error || `Access denied (${res.status})`);
+                }
             }
         } catch (err: any) {
             setError(err.message || 'Connection error');

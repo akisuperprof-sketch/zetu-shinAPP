@@ -7,7 +7,7 @@ export default async function handler(req: any, res: any) {
     }
 
     const { password } = req.body;
-    const adminPassword = process.env.ADMIN_RESEARCH_PASSWORD;
+    const adminPassword = process.env.ADMIN_RESEARCH_PASSWORD?.trim();
     const internalKey = process.env.INTERNAL_API_KEY;
 
     if (!adminPassword || !internalKey) {
