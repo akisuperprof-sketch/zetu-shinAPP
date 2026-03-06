@@ -79,11 +79,16 @@ const ResearchImageInjectionPanel: React.FC = () => {
             try {
                 const base64 = await convertToBase64(f.file);
 
-                // Construct payload similar to doObservationLog in App.tsx
+                // 匿名IDが取得できない場合（管理者等）はダミーのUUIDを使用
+                // DB制約（UUID型）を回避するための固定値
+                const fallbackAnonId = '00000000-0000-0000-0000-000000000000';
+                const anonId = session?.anonId || fallbackAnonId;
+
+                // Construct payload exactly matching the edge_functions/research_save.ts schema
                 const payload = {
-                    anon_id: session?.anonId || 'INJECTION_USER',
+                    anon_id: anonId,
                     image_base64: base64,
-                    image_mime_type: f.file.type,
+                    image_mime_type: f.file.type || 'image/jpeg',
                     age_range: 'unknown',
                     gender: 'その他',
                     chief_complaint: `[IMAGE_INJECTION] Batch: ${batchName || 'none'} | Memo: ${memo || 'none'}`,
@@ -109,10 +114,13 @@ const ResearchImageInjectionPanel: React.FC = () => {
                     updatedFiles[i] = { ...f, status: 'success' };
                 } else {
                     const errData = await res.json().catch(() => ({}));
-                    updatedFiles[i] = { ...f, status: 'failed', error: errData.error || `HTTP ${res.status}` };
+                    const errorMsg = errData.error || errData.message || `HTTP ${res.status}`;
+                    console.error('[Injection] Response Error:', errData);
+                    updatedFiles[i] = { ...f, status: 'failed', error: errorMsg };
                 }
             } catch (err: any) {
-                updatedFiles[i] = { ...f, status: 'failed', error: err.message };
+                console.error('[Injection] Request Error:', err);
+                updatedFiles[i] = { ...f, status: 'failed', error: err.message || 'Network Error' };
             }
             setFiles([...updatedFiles]);
         }
@@ -178,24 +186,31 @@ const ResearchImageInjectionPanel: React.FC = () => {
             {files.length > 0 && (
                 <div className="space-y-3 mb-6 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                     {files.map(f => (
-                        <div key={f.id} className="flex items-center gap-3 bg-slate-800/80 p-3 rounded-xl border border-slate-700/50">
-                            <img src={f.previewUrl} className="w-10 h-10 rounded-lg object-cover bg-black" alt="preview" />
-                            <div className="flex-1 min-w-0">
-                                <div className="text-[11px] font-bold truncate">{f.file.name}</div>
-                                <div className="text-[9px] text-slate-500 lowercase">{(f.size / 1024).toFixed(1)} KB</div>
+                        <div key={f.id} className="flex flex-col gap-1">
+                            <div className="flex items-center gap-3 bg-slate-800/80 p-3 rounded-xl border border-slate-700/50">
+                                <img src={f.previewUrl} className="w-10 h-10 rounded-lg object-cover bg-black" alt="preview" />
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-[11px] font-bold truncate">{f.file.name}</div>
+                                    <div className="text-[9px] text-slate-500 lowercase">{(f.size / 1024).toFixed(1)} KB</div>
+                                </div>
+                                <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${f.status === 'success' ? 'bg-emerald-500/20 text-emerald-400' :
+                                    f.status === 'failed' ? 'bg-red-500/20 text-red-400' :
+                                        f.status === 'skipped' ? 'bg-slate-500/20 text-slate-400' :
+                                            f.status === 'uploading' ? 'bg-indigo-500/20 text-indigo-400 animate-pulse' :
+                                                'bg-slate-700 text-slate-400'
+                                    }`}>
+                                    {f.status === 'success' ? '成功' :
+                                        f.status === 'failed' ? '失敗' :
+                                            f.status === 'skipped' ? 'スキップ' :
+                                                f.status === 'uploading' ? '送信中...' :
+                                                    '待機中'}
+                                </div>
                             </div>
-                            <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${f.status === 'success' ? 'bg-emerald-500/20 text-emerald-400' :
-                                f.status === 'failed' ? 'bg-red-500/20 text-red-400' :
-                                    f.status === 'skipped' ? 'bg-slate-500/20 text-slate-400' :
-                                        f.status === 'uploading' ? 'bg-indigo-500/20 text-indigo-400 animate-pulse' :
-                                            'bg-slate-700 text-slate-400'
-                                }`}>
-                                {f.status === 'success' ? '成功' :
-                                    f.status === 'failed' ? '失敗' :
-                                        f.status === 'skipped' ? 'スキップ' :
-                                            f.status === 'uploading' ? '送信中...' :
-                                                '待機中'}
-                            </div>
+                            {f.error && (
+                                <div className="text-[10px] text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/20 mx-1 break-words">
+                                    ❌ {f.error}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
