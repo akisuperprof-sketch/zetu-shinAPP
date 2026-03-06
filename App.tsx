@@ -13,6 +13,7 @@ import StreakBadge from './components/StreakBadge';
 import FindingsDictionaryScreen from './components/FindingsDictionaryScreen';
 import SettingsModal from './components/SettingsModal';
 import ImageQualityGateScreen from './components/ImageQualityGateScreen';
+import AdminAuthGate from './components/AdminAuthGate';
 import { AnalysisMode, AppState, DiagnosisResult, FindingResult, UploadedImage, UserInfo, Gender, ImageSlot, PlanType } from './types';
 import { routeTongueAnalysis } from './services/tongueAnalyzerRouter';
 import { analyzeImageQuality } from './utils/imageQualityAnalyzer';
@@ -647,9 +648,17 @@ const App: React.FC = () => {
           />
         );
       case AppState.AdminDashboard:
-        return <AdminDashboard onBack={() => setAppState(AppState.Uploading)} />;
+        return (
+          <AdminAuthGate>
+            <AdminDashboard onBack={() => setAppState(AppState.Uploading)} />
+          </AdminAuthGate>
+        );
       case AppState.ResearchDashboard:
-        return <ResearchDashboard onBack={() => setAppState(AppState.Uploading)} />;
+        return (
+          <AdminAuthGate>
+            <ResearchDashboard onBack={() => setAppState(AppState.Uploading)} />
+          </AdminAuthGate>
+        );
       case AppState.DevSettings:
         return (
           <DevSettingsScreen

@@ -7,6 +7,9 @@ import { isFeatureEnabled } from '../utils/featureFlags';
 import { evaluateExpertAgreement, ExpertEvaluationMetrics } from '../services/research/expertEvaluation';
 import { evaluateResearchState, ResearchState } from '../services/research/researchOS';
 import { getNextResearchActions } from '../services/research/researchPlanner';
+import { getAdminToken } from '../utils/adminAuthToken';
+
+import ResearchImageInjectionPanel from './ResearchImageInjectionPanel';
 
 interface ResearchDashboardProps {
     records?: ObservationData[];
@@ -28,7 +31,10 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
             try {
                 let dataToUse = records;
                 if (!dataToUse || dataToUse.length === 0) {
-                    const res = await fetch('/api/research/dashboard_data');
+                    const token = getAdminToken();
+                    const res = await fetch('/api/research/dashboard_data', {
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
                     if (res.ok) {
                         dataToUse = await res.json();
                     } else {
@@ -196,6 +202,9 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
                     <p className="text-xs text-slate-500">Coming soon based on vision layer integration.</p>
                 </div>
             )}
+
+            {/* Research Image Injection (Dev Only) */}
+            <ResearchImageInjectionPanel />
         </div>
     );
 };

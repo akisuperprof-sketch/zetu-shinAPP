@@ -1,12 +1,8 @@
 name: ZETUSHIN Security & Separation Audit
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  schedule:
-    - cron: '0 0 * * *' # Daily at midnight
+  workflow_dispatch:
+
 
 jobs:
   audit:

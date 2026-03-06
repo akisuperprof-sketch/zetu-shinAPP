@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/generate-build-info.js && vite --port 3000",
+    "dev:research": "VITE_DEV_FEATURE_OVERRIDES='{\"FEATURE_RESEARCH_DASHBOARD\":true,\"FEATURE_RESEARCH_IMAGE_INJECTION\":true,\"FEATURE_RESEARCH_OS\":true,\"FEATURE_DATA_COVERAGE\":true}' npm run dev",
     "build": "node scripts/generate-build-info.js && vite build",
     "preview": "vite preview",
     "prepare": "husky",

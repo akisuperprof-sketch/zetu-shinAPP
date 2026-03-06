@@ -7,6 +7,14 @@
             "destination": "/api/$1"
         },
         {
+            "source": "/admin",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/admin/:path*",
+            "destination": "/index.html"
+        },
+        {
             "source": "/app",
             "destination": "/app/index.html"
         },

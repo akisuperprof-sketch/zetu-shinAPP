@@ -71,6 +71,7 @@ export const FEATURES: FeatureFlags = {
     FEATURE_HEAT_COLD_ESTIMATOR: false,
     FEATURE_QUALITY_SCORE: false,
     FEATURE_RESEARCH_OS: false,
+    FEATURE_RESEARCH_IMAGE_INJECTION: false,
 };
 
 /**

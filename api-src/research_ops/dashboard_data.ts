@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { verifyAdminToken } from './auth_utils';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -6,6 +7,10 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 export default async function handler(req: any, res: any) {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method Not Allowed' });
+    }
+
+    if (!verifyAdminToken(req)) {
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {

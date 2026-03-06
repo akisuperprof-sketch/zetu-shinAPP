@@ -183,6 +183,22 @@ export const DevControlCenter: React.FC = () => {
                             </table>
                         </div>
 
+                        {/* Research OS Shortcuts */}
+                        <div className="bg-blue-900/20 border border-blue-500/30 p-3 rounded-xl space-y-2">
+                            <h4 className="text-[10px] uppercase font-bold text-blue-400 tracking-widest flex items-center gap-1">
+                                🔬 Research Tools
+                            </h4>
+                            <button
+                                onClick={() => window.location.href = '/admin/research'}
+                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-3 rounded text-[10px] shadow-sm transition-colors flex items-center justify-center gap-2 select-none"
+                            >
+                                📊 Open Research Dashboard
+                            </button>
+                            <p className="text-[8px] text-blue-400/70 text-center uppercase tracking-tighter">
+                                Requires FEATURE_RESEARCH_DASHBOARD flag
+                            </p>
+                        </div>
+
                         {/* Research Debug Panel Section */}
                         <div className="bg-slate-900 border border-slate-700/50 rounded-xl p-3 shadow-inner">
                             <ResearchDebugPanel />
