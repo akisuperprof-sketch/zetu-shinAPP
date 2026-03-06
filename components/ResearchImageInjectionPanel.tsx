@@ -13,6 +13,7 @@ const ResearchImageInjectionPanel: React.FC = () => {
     const [uploading, setUploading] = useState(false);
     const [batchName, setBatchName] = useState('');
     const [memo, setMemo] = useState('');
+    const [processingMode, setProcessingMode] = useState<'off' | 'light' | 'full'>('off');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Feature Flag and Component Level Guard
@@ -31,7 +32,8 @@ const ResearchImageInjectionPanel: React.FC = () => {
             file: file,
             previewUrl: URL.createObjectURL(file),
             status: 'pending',
-            size: file.size
+            size: file.size,
+            processing: { stage: 'Ready' }
         }));
 
         // Validate
@@ -73,18 +75,15 @@ const ResearchImageInjectionPanel: React.FC = () => {
             const f = updatedFiles[i];
             if (f.status !== 'pending') continue;
 
-            updatedFiles[i] = { ...f, status: 'uploading' };
+            updatedFiles[i] = { ...f, status: 'uploading', processing: { stage: 'Preparing payload...' } };
             setFiles([...updatedFiles]);
 
             try {
                 const base64 = await convertToBase64(f.file);
 
-                // 匿名IDが取得できない場合（管理者等）はダミーのUUIDを使用
-                // DB制約（UUID型）を回避するための固定値
                 const fallbackAnonId = '00000000-0000-0000-0000-000000000000';
                 const anonId = session?.anonId || fallbackAnonId;
 
-                // Construct payload exactly matching the edge_functions/research_save.ts schema
                 const payload = {
                     anon_id: anonId,
                     image_base64: base64,
@@ -98,8 +97,12 @@ const ResearchImageInjectionPanel: React.FC = () => {
                     questionnaire_version: 'injection_v1.0',
                     scores_json: { xuShi: 0, heatCold: 0, zaoShi: 0 },
                     pattern_ids: [],
-                    analysis_mode: 'standard'
+                    analysis_mode: 'standard',
+                    processing_mode: processingMode
                 };
+
+                updatedFiles[i] = { ...updatedFiles[i], processing: { stage: processingMode === 'off' ? 'Saving...' : 'Processing & Saving...' } };
+                setFiles([...updatedFiles]);
 
                 const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/research_save`, {
                     method: 'POST',
@@ -111,16 +114,25 @@ const ResearchImageInjectionPanel: React.FC = () => {
                 });
 
                 if (res.ok) {
-                    updatedFiles[i] = { ...f, status: 'success' };
+                    const data = await res.json();
+                    updatedFiles[i] = {
+                        ...f,
+                        status: 'success',
+                        processing: {
+                            stage: 'Done',
+                            score: data.processing?.score,
+                            status: data.processing?.status
+                        }
+                    };
                 } else {
                     const errData = await res.json().catch(() => ({}));
                     const errorMsg = errData.error || errData.message || `HTTP ${res.status}`;
                     console.error('[Injection] Response Error:', errData);
-                    updatedFiles[i] = { ...f, status: 'failed', error: errorMsg };
+                    updatedFiles[i] = { ...f, status: 'failed', error: errorMsg, processing: { stage: 'Failed' } };
                 }
             } catch (err: any) {
                 console.error('[Injection] Request Error:', err);
-                updatedFiles[i] = { ...f, status: 'failed', error: err.message || 'Network Error' };
+                updatedFiles[i] = { ...f, status: 'failed', error: err.message || 'Network Error', processing: { stage: 'Error' } };
             }
             setFiles([...updatedFiles]);
         }
@@ -168,6 +180,57 @@ const ResearchImageInjectionPanel: React.FC = () => {
                 </div>
             </div>
 
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 mb-6">
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">
+                    画像処理エンジン設定 (Preprocessing Mode)
+                </label>
+                <div className="flex gap-4 mb-4">
+                    {(['off', 'light', 'full'] as const).map(mode => (
+                        <label key={mode} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border transition-all cursor-pointer ${processingMode === mode
+                            ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400 font-black'
+                            : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'
+                            }`}>
+                            <input
+                                type="radio"
+                                name="processingMode"
+                                value={mode}
+                                checked={processingMode === mode}
+                                onChange={() => setProcessingMode(mode)}
+                                className="hidden"
+                            />
+                            <span className="text-xs uppercase tracking-tighter">
+                                {mode === 'off' ? '🚫 OFF' : mode === 'light' ? '⚡ LIGHT' : '🔥 FULL'}
+                            </span>
+                        </label>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 px-1">
+                    <div className="flex items-center justify-between py-1 border-b border-slate-700/50">
+                        <span className="text-[10px] text-slate-400 font-bold">SAVE_MASK</span>
+                        <span className="text-[10px] font-black text-indigo-400">{processingMode === 'full' ? 'ON' : 'OFF'}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-700/50">
+                        <span className="text-[10px] text-slate-400 font-bold">AUTO_RESIZE</span>
+                        <span className="text-[10px] font-black text-indigo-400">ON (MAX 2048px)</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-700/50">
+                        <span className="text-[10px] text-slate-400 font-bold">MAX_SIZE</span>
+                        <span className="text-[10px] font-black text-slate-300">10 MB</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-700/50">
+                        <span className="text-[10px] text-slate-400 font-bold">QUALITY_CHECK</span>
+                        <span className="text-[10px] font-black text-indigo-400">{processingMode !== 'off' ? 'BASIC' : 'OFF'}</span>
+                    </div>
+                </div>
+
+                <p className="text-[9px] text-slate-500 mt-4 leading-relaxed bg-slate-900/40 p-2 rounded-lg border border-slate-700/30">
+                    {processingMode === 'off' && '・オリジナル画像のみ保存します。最も高速で安全です。'}
+                    {processingMode === 'light' && '・軽量クロップと品質スコア付与をシミュレーション実行します。'}
+                    {processingMode === 'full' && '・フルセグメンテーション（SAM）とマスク生成をシミュレーション実行します。'}
+                </p>
+            </div>
+
             <div className="border-2 border-dashed border-slate-700 rounded-2xl p-8 flex flex-col items-center justify-center bg-slate-800/50 hover:bg-slate-800 transition-colors mb-6 cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}>
                 <input
@@ -184,15 +247,30 @@ const ResearchImageInjectionPanel: React.FC = () => {
             </div>
 
             {files.length > 0 && (
-                <div className="space-y-3 mb-6 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-3 mb-6 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                     {files.map(f => (
                         <div key={f.id} className="flex flex-col gap-1">
                             <div className="flex items-center gap-3 bg-slate-800/80 p-3 rounded-xl border border-slate-700/50">
                                 <img src={f.previewUrl} className="w-10 h-10 rounded-lg object-cover bg-black" alt="preview" />
                                 <div className="flex-1 min-w-0">
                                     <div className="text-[11px] font-bold truncate">{f.file.name}</div>
-                                    <div className="text-[9px] text-slate-500 lowercase">{(f.size / 1024).toFixed(1)} KB</div>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-[9px] text-slate-500 lowercase">{(f.size / 1024).toFixed(1)} KB</span>
+                                        {f.processing?.stage && (
+                                            <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-tight italic">
+                                                [{f.processing.stage}]
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
+                                {f.processing?.score !== undefined && (
+                                    <div className="text-center px-2">
+                                        <div className="text-[8px] text-slate-500 font-black">Score</div>
+                                        <div className={`text-xs font-black ${f.processing.score > 80 ? 'text-emerald-400' : 'text-orange-400'}`}>
+                                            {f.processing.score}
+                                        </div>
+                                    </div>
+                                )}
                                 <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${f.status === 'success' ? 'bg-emerald-500/20 text-emerald-400' :
                                     f.status === 'failed' ? 'bg-red-500/20 text-red-400' :
                                         f.status === 'skipped' ? 'bg-slate-500/20 text-slate-400' :

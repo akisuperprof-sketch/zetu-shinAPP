@@ -8,6 +8,11 @@ export interface FileUploadStatus {
     status: UploadStatus;
     error?: string;
     size: number;
+    processing?: {
+        stage: string;
+        score?: number;
+        status?: string;
+    };
 }
 
 export interface UploadBatchSummary {
