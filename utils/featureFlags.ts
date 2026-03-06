@@ -74,10 +74,28 @@ export const FEATURES: FeatureFlags = {
     FEATURE_RESEARCH_IMAGE_INJECTION: false,
 };
 
+import { isAdminAuthenticated } from './adminAuthToken';
+
 /**
  * 機能が有効かどうかを判定する
  */
 export const isFeatureEnabled = (key: keyof FeatureFlags): boolean => {
+    // 管理者認証済みの場合のみ、特定の研究機能を許可
+    const researchFlags: (keyof FeatureFlags)[] = [
+        'FEATURE_RESEARCH_DASHBOARD',
+        'FEATURE_RESEARCH_IMAGE_INJECTION',
+        'FEATURE_RESEARCH_OS',
+        'FEATURE_DATA_COVERAGE',
+        'FEATURE_RESEARCH_ALERTS',
+        'FEATURE_EXPERT_EVALUATION',
+        'FEATURE_QUALITY_SCORE',
+        'FEATURE_HEAT_COLD_ESTIMATOR'
+    ];
+
+    if (researchFlags.includes(key) && isAdminAuthenticated()) {
+        return true;
+    }
+
     // 本番環境でのハードロック (オーバーライドは一切無視)
     if (IS_PROD) {
         return FEATURES[key];
