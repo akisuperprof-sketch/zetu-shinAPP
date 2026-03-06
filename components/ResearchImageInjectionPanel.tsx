@@ -130,31 +130,31 @@ const ResearchImageInjectionPanel: React.FC = () => {
         <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 mt-6 font-noto text-white animate-fade-in">
             <div className="flex items-center justify-between mb-6">
                 <h3 className="text-sm font-black tracking-widest uppercase flex items-center gap-2">
-                    <span className="text-xl">📥</span> Research Data Injection
+                    <span className="text-xl">📥</span> 研究データ大量投入パネル
                 </h3>
                 <div className="px-3 py-1 bg-red-500/20 text-red-400 text-[10px] font-black rounded-full border border-red-500/30 uppercase tracking-tighter">
-                    Internal Use Only
+                    内部利用限定
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Batch Name (optional)</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">バッチ名 (任意)</label>
                     <input
                         type="text"
                         value={batchName}
                         onChange={e => setBatchName(e.target.value)}
-                        placeholder="e.g. Hospital_A_2026"
+                        placeholder="例: 病院_A_2026"
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
                     />
                 </div>
                 <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Memo (optional)</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">メモ (任意)</label>
                     <input
                         type="text"
                         value={memo}
                         onChange={e => setMemo(e.target.value)}
-                        placeholder="e.g. 10 samples for validation"
+                        placeholder="例: 検証用サンプル 10件"
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
                     />
                 </div>
@@ -172,7 +172,7 @@ const ResearchImageInjectionPanel: React.FC = () => {
                 />
                 <span className="text-4xl mb-3">🖼️</span>
                 <p className="text-xs font-bold text-slate-300">画像をここにドラッグ、またはクリックして選択</p>
-                <p className="text-[10px] text-slate-500 mt-1 uppercase">JPG, PNG (Multiple selection allowed)</p>
+                <p className="text-[10px] text-slate-500 mt-1 uppercase">JPG, PNG (複数選択可)</p>
             </div>
 
             {files.length > 0 && (
@@ -190,7 +190,11 @@ const ResearchImageInjectionPanel: React.FC = () => {
                                         f.status === 'uploading' ? 'bg-indigo-500/20 text-indigo-400 animate-pulse' :
                                             'bg-slate-700 text-slate-400'
                                 }`}>
-                                {f.status}
+                                {f.status === 'success' ? '成功' :
+                                    f.status === 'failed' ? '失敗' :
+                                        f.status === 'skipped' ? 'スキップ' :
+                                            f.status === 'uploading' ? '送信中...' :
+                                                '待機中'}
                             </div>
                         </div>
                     ))}
@@ -200,15 +204,15 @@ const ResearchImageInjectionPanel: React.FC = () => {
             <div className="flex items-center justify-between bg-slate-800 p-4 rounded-2xl border border-slate-700">
                 <div className="flex gap-4">
                     <div className="text-center">
-                        <div className="text-[9px] font-black text-slate-500 uppercase">Selected</div>
+                        <div className="text-[9px] font-black text-slate-500 uppercase">選択済み</div>
                         <div className="text-lg font-black">{summary.total}</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-[9px] font-black text-emerald-500 uppercase">Success</div>
+                        <div className="text-[9px] font-black text-emerald-500 uppercase">成功</div>
                         <div className="text-lg font-black text-emerald-400">{summary.success}</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-[9px] font-black text-red-500 uppercase">Failed</div>
+                        <div className="text-[9px] font-black text-red-500 uppercase">失敗</div>
                         <div className="text-lg font-black text-red-400">{summary.failed}</div>
                     </div>
                 </div>
@@ -219,14 +223,14 @@ const ResearchImageInjectionPanel: React.FC = () => {
                         disabled={uploading || files.length === 0}
                         className="px-6 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white rounded-full text-xs font-black transition-all uppercase tracking-widest"
                     >
-                        Clear
+                        クリア
                     </button>
                     <button
                         onClick={startUpload}
                         disabled={uploading || summary.total === 0 || summary.success + summary.failed + summary.skipped === summary.total}
                         className="px-8 py-2 bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white rounded-full text-xs font-black transition-all uppercase tracking-widest shadow-lg shadow-indigo-500/20"
                     >
-                        {uploading ? 'Uploading...' : 'Start Injection'}
+                        {uploading ? '送信中...' : 'アップロード開始'}
                     </button>
                 </div>
             </div>

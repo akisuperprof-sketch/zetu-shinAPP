@@ -58,7 +58,7 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
     }, [records]);
 
     if (!isFeatureEnabled('FEATURE_RESEARCH_DASHBOARD')) return null;
-    if (loading || !allTimeMetrics) return <div className="p-8 text-center animate-pulse text-slate-500">Loading Data...</div>;
+    if (loading || !allTimeMetrics) return <div className="p-8 text-center animate-pulse text-slate-500">データを読み込み中...</div>;
 
     const labeledPercent = (allTimeMetrics.labeled_rate * 100).toFixed(1);
     const validPercent = (allTimeMetrics.valid_rate * 100).toFixed(1);
@@ -67,7 +67,7 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
         <div className="max-w-4xl mx-auto p-4 md:p-8 animate-fade-in font-noto">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-black text-[#1F3A5F] flex items-center gap-2 tracking-tight">
-                    <span className="text-3xl">🔬</span> Research Dashboard v1.3
+                    <span className="text-3xl">🔬</span> 研究ダッシュボード v1.3
                 </h2>
                 {onBack && (
                     <button onClick={onBack} className="text-sm bg-slate-200 hover:bg-slate-300 px-4 py-2 rounded-lg transition-colors font-bold text-slate-700">
@@ -80,31 +80,31 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
             {isFeatureEnabled('FEATURE_RESEARCH_OS') && researchStateOS && (
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 border-l-4 border-l-blue-500">
                     <h3 className="text-sm font-black text-slate-800 mb-4 flex items-center gap-2">
-                        <span>🧠</span> Research OS Layer
+                        <span>🧠</span> 研究OS レイヤー
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <p className="text-[10px] text-slate-500 font-bold mb-1">Current Research Stage</p>
+                            <p className="text-[10px] text-slate-500 font-bold mb-1">現在の研究ステージ</p>
                             <p className="text-lg font-black text-blue-700">{researchStateOS.stage}</p>
                         </div>
                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <p className="text-[10px] text-slate-500 font-bold mb-1">Model Readiness Score</p>
+                            <p className="text-[10px] text-slate-500 font-bold mb-1">モデル準備スコア</p>
                             <div className="flex items-end gap-1">
                                 <p className="text-2xl font-black text-emerald-600">{researchStateOS.model_readiness.score}</p>
                                 <p className="text-xs text-slate-400 font-bold mb-1">/ 100</p>
                             </div>
-                            <p className="text-[10px] mt-1 text-slate-500">{researchStateOS.model_readiness.ready ? '✅ READY' : '❌ NOT READY'}</p>
+                            <p className="text-[10px] mt-1 text-slate-500">{researchStateOS.model_readiness.ready ? '✅ 準備完了' : '❌ 準備不足'}</p>
                         </div>
                     </div>
 
                     {researchStateOS.shortage_top5.length > 0 && (
                         <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 mb-4">
-                            <p className="text-xs font-bold text-orange-800 mb-2">Top Shortages</p>
+                            <p className="text-xs font-bold text-orange-800 mb-2">不足データ項目 Top 5</p>
                             <ul className="text-xs space-y-1 text-orange-700">
                                 {researchStateOS.shortage_top5.map((s, idx) => (
                                     <li key={idx} className="flex justify-between border-b border-orange-100/50 pb-1">
                                         <span>{s.axis} = {s.label}</span>
-                                        <span className="font-bold">need +{s.shortage}</span>
+                                        <span className="font-bold">目標まで +{s.shortage}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -112,7 +112,7 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
                     )}
 
                     <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                        <p className="text-xs font-bold text-blue-800 mb-2">Next Recommended Actions</p>
+                        <p className="text-xs font-bold text-blue-800 mb-2">次の推奨アクション</p>
                         <ul className="list-disc list-inside space-y-1">
                             {researchStateOS.next_actions.map((action, idx) => (
                                 <li key={idx} className="text-sm text-blue-600 font-medium">{action}</li>
@@ -130,19 +130,19 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 relative">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Records</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">累計画像数</p>
                     <p className="text-2xl font-black text-slate-800">{allTimeMetrics.total_records}</p>
                 </div>
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 relative">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Labeled Rate</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ラベル付与率</p>
                     <p className="text-2xl font-black text-blue-600">{labeledPercent}%</p>
                 </div>
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 relative">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Valid Rate</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">有効データ率</p>
                     <p className="text-2xl font-black text-indigo-600">{validPercent}%</p>
                 </div>
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 relative">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ROI Failed</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ROI取得失敗率</p>
                     <p className="text-2xl font-black text-rose-500">{(allTimeMetrics.roi_failed_rate * 100).toFixed(1)}%</p>
                 </div>
             </div>
@@ -155,7 +155,7 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
             {/* Exclusion Reasons */}
             <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 shadow-inner mb-8">
                 <h3 className="text-sm font-black text-slate-700 mb-4 flex items-center gap-2">
-                    <span>⚠️</span> Top Exclusion Reasons
+                    <span>⚠️</span> 主要な除外（HOLD）理由
                 </h3>
                 {allTimeMetrics.exclusion_reasons_top.length === 0 ? (
                     <p className="text-xs text-slate-500">除外データはありません</p>
@@ -174,14 +174,14 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
             {/* Expert Evaluation */}
             {isFeatureEnabled('FEATURE_EXPERT_EVALUATION') && expertMetrics && (
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
-                    <h3 className="text-sm font-black text-slate-800 mb-4">🩺 Expert Agreement (v0)</h3>
+                    <h3 className="text-sm font-black text-slate-800 mb-4">🩺 専門家一致度 (v0)</h3>
                     <div className="flex gap-4">
                         <div className="bg-slate-50 p-4 rounded-xl flex-1 border border-slate-100">
-                            <p className="text-[10px] text-slate-500 font-bold mb-1">Agreement Rate</p>
+                            <p className="text-[10px] text-slate-500 font-bold mb-1">一致率</p>
                             <p className="text-2xl font-black text-green-600">{(expertMetrics.agreement_rate * 100).toFixed(1)}%</p>
                         </div>
                         <div className="bg-slate-50 p-4 rounded-xl flex-1 border border-slate-100">
-                            <p className="text-[10px] text-slate-500 font-bold mb-1">Unlabeled Rate</p>
+                            <p className="text-[10px] text-slate-500 font-bold mb-1">未ラベル率</p>
                             <p className="text-2xl font-black text-orange-500">{(expertMetrics.unlabeled_rate * 100).toFixed(1)}%</p>
                         </div>
                     </div>
@@ -191,15 +191,15 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
             {/* Quality Score & Estimator placeholders */}
             {isFeatureEnabled('FEATURE_QUALITY_SCORE') && (
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
-                    <h3 className="text-sm font-black text-slate-800 mb-2">📷 Quality Score Distrib (v0)</h3>
-                    <p className="text-xs text-slate-500">Coming soon as features are extracted.</p>
+                    <h3 className="text-sm font-black text-slate-800 mb-2">📷 画像品質スコア分布 (v0)</h3>
+                    <p className="text-xs text-slate-500">特徴量抽出の統合後に表示予定です。</p>
                 </div>
             )}
 
             {isFeatureEnabled('FEATURE_HEAT_COLD_ESTIMATOR') && (
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
-                    <h3 className="text-sm font-black text-slate-800 mb-2">🔥 Heat-Cold Score Distrib (v0)</h3>
-                    <p className="text-xs text-slate-500">Coming soon based on vision layer integration.</p>
+                    <h3 className="text-sm font-black text-slate-800 mb-2">🔥 寒熱スコア分布 (v0)</h3>
+                    <p className="text-xs text-slate-500">Visionレイヤーとの統合により表示予定です。</p>
                 </div>
             )}
 

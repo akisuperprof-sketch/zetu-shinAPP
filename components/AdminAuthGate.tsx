@@ -58,18 +58,18 @@ const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
             <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-2xl w-full max-w-md animate-fade-in">
                 <div className="text-center mb-8">
                     <span className="text-4xl mb-4 block">🛡️</span>
-                    <h1 className="text-xl font-black text-white uppercase tracking-widest">Internal Research Access</h1>
-                    <p className="text-xs text-slate-400 mt-2 uppercase tracking-tighter">Admin Authentication Required</p>
+                    <h1 className="text-xl font-black text-white uppercase tracking-widest">内部研究用アクセス</h1>
+                    <p className="text-xs text-slate-400 mt-2 uppercase tracking-tighter">管理者認証が必要です</p>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div>
-                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1 ml-1 tracking-widest">Access Key</label>
+                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1 ml-1 tracking-widest">アクセスキー</label>
                         <input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Enter administrative secret"
+                            placeholder="管理者用シークレットを入力"
                             className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-600"
                             autoFocus
                         />
@@ -77,7 +77,9 @@ const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
 
                     {error && (
                         <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold py-2 px-3 rounded-lg flex items-center gap-2">
-                            <span>⚠️</span> {error}
+                            <span>⚠️</span> {error === 'Invalid password' ? 'パスワードが正しくありません' :
+                                error === 'Login endpoint not available (404)' ? 'ログイン用エンドポイントが見つかりません (404)' :
+                                    error === 'Server configuration error (500)' ? 'サーバー設定エラーが発生しました (500)' : error}
                         </div>
                     )}
 
@@ -86,12 +88,12 @@ const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
                         disabled={loading || !password}
                         className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:shadow-none uppercase tracking-widest text-xs"
                     >
-                        {loading ? 'Verifying...' : 'Authorize Access'}
+                        {loading ? '検証中...' : 'アクセスを承認'}
                     </button>
                 </form>
 
                 <p className="text-[9px] text-slate-600 mt-8 text-center uppercase tracking-widest">
-                    Unauthorized access is strictly prohibited.
+                    無断アクセスは固く禁じられています。
                 </p>
             </div>
         </div>
