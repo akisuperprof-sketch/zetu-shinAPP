@@ -91,9 +91,12 @@ const App: React.FC = () => {
 
       const res = await fetch('/api/token', { method: 'POST' });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: 'Unknown Network Error' }));
-        setApiDisabled(true);
-        setApiError(`API_CHECK_FAILED: ${res.status} ${data.error || ''}`);
+        const data = await res.json().catch(() => ({ error: 'Unknown Error' }));
+        console.warn(`[API_HEALTH] /api/token check failed: ${res.status}`, data);
+        if (res.status === 404) {
+          setApiDisabled(true);
+          setApiError(`API_MISSING: ${res.status}`);
+        }
       }
     } catch (err: any) {
       setApiDisabled(true);

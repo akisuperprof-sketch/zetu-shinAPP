@@ -26,7 +26,10 @@ const handlers: Record<string, any> = {
     'research/save_observation': save_observation,
     'research/dashboard_data': dashboard_data,
     'research/login': research_login,
+    // Add variations for robustness
+    '/research/login': research_login,
     'token': token,
+    '/token': token,
     'review/create': review_create,
     'review/submit': review_submit,
     'analyze/update_v2': analyze_update_v2,
@@ -72,12 +75,12 @@ export default async function handler(req: any, res: any) {
 
     console.log(`[api:main] START id=${requestId} method=${req.method} path=${pathname} (rawUrl=${req.url})`);
 
-    const handlerFunc = handlers[pathname];
+    const handlerFunc = handlers[pathname] || handlers[`/${pathname}`];
 
     if (handlerFunc) {
         try {
             // Check critical envs
-            const isDebug = fullUrl.searchParams.get('debug') === '1';
+            const isDebug = fullUrl.searchParams.get('debug') === '1' || process.env.NODE_ENV === 'development';
             const missingEnvs = [];
             if (!process.env.VITE_SUPABASE_URL) missingEnvs.push('VITE_SUPABASE_URL');
             if (!process.env.GEMINI_API_KEY) missingEnvs.push('GEMINI_API_KEY');
@@ -90,7 +93,7 @@ export default async function handler(req: any, res: any) {
                         ok: false,
                         requestId,
                         code: 'API_5XX',
-                        message_public: 'Server Config Error',
+                        message_public: `Critical Environment Variables Missing: ${missingEnvs.join(', ')}`,
                         details: missingEnvs,
                         retryable: false
                     });
@@ -109,19 +112,23 @@ export default async function handler(req: any, res: any) {
                 ok: false,
                 requestId,
                 code: 'API_5XX',
-                message_public: 'Internal Server Error',
+                message_public: 'Internal Server Error (Dispatcher Exception)',
                 stage: 'unhandled_exception',
+                error_msg: error.message,
                 retryable: true
             });
         }
     }
 
+    console.warn(`[api:main] 404: No handler for "${pathname}". Map keys: ${Object.keys(handlers).join(', ')}`);
     return res.status(404).json({
         ok: false,
         requestId,
         code: 'API_4XX',
         message_public: `Not Found: ${pathname}`,
         instruction: "Endpoint not found in main dispatcher map.",
+        actual_path: pathname,
+        available_paths: Object.keys(handlers),
         retryable: false
     });
 }
