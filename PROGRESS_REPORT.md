@@ -40,6 +40,7 @@
 - `FEATURE_QUALITY_SCORE` : 画質分布パネルの表示
 - `FEATURE_HEAT_COLD_ESTIMATOR` : 寒熱分布パネルの表示
 - `FEATURE_VISION_EXTRACTOR` : (v1ロジック稼働用)
+- `FEATURE_RESEARCH_OS` : Research OS（研究ステージ、アクションプラン等）の総合ダッシュボードの表示
 
 ---
 

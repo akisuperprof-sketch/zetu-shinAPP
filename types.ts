@@ -191,4 +191,5 @@ export interface FeatureFlags {
   FEATURE_VISION_EXTRACTOR: boolean;
   FEATURE_HEAT_COLD_ESTIMATOR: boolean;
   FEATURE_QUALITY_SCORE: boolean;
+  FEATURE_RESEARCH_OS: boolean;
 }

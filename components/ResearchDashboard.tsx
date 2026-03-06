@@ -5,6 +5,9 @@ import ResearchAlerts from './ResearchAlerts';
 import DataCoveragePanel from './DataCoveragePanel';
 import { isFeatureEnabled } from '../utils/featureFlags';
 import { evaluateExpertAgreement, ExpertEvaluationMetrics } from '../services/research/expertEvaluation';
+import { evaluateResearchState, ResearchState } from '../services/research/researchOS';
+import { getNextResearchActions } from '../services/research/researchPlanner';
+import { calculateModelReadiness } from '../services/research/modelReadiness';
 
 interface ResearchDashboardProps {
     records?: ObservationData[];
@@ -14,6 +17,9 @@ interface ResearchDashboardProps {
 const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }) => {
     const [allTimeMetrics, setAllTimeMetrics] = useState<ResearchMetrics | null>(null);
     const [expertMetrics, setExpertMetrics] = useState<ExpertEvaluationMetrics | null>(null);
+    const [researchStateOS, setResearchStateOS] = useState<ResearchState | null>(null);
+    const [readinessScore, setReadinessScore] = useState<number>(0);
+    const [nextActions, setNextActions] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [fetchedRecords, setFetchedRecords] = useState<ObservationData[]>([]);
 
@@ -35,6 +41,11 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
                 setFetchedRecords(dataToUse || []);
                 setAllTimeMetrics(calculateMetrics(dataToUse || []));
                 setExpertMetrics(evaluateExpertAgreement(dataToUse || []));
+
+                const stateOS = evaluateResearchState(dataToUse || []);
+                setResearchStateOS(stateOS);
+                setReadinessScore(calculateModelReadiness(stateOS.total_records, stateOS.labeled_records, stateOS.agreement_rate));
+                setNextActions(getNextResearchActions(stateOS.stage));
             } catch (err) {
                 console.error(err);
             } finally {
@@ -63,6 +74,36 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
                     </button>
                 )}
             </div>
+
+            {/* Research OS Panel */}
+            {isFeatureEnabled('FEATURE_RESEARCH_OS') && researchStateOS && (
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 border-l-4 border-l-blue-500">
+                    <h3 className="text-sm font-black text-slate-800 mb-4 flex items-center gap-2">
+                        <span>🧠</span> Research OS Layer
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <p className="text-[10px] text-slate-500 font-bold mb-1">Current Research Stage</p>
+                            <p className="text-lg font-black text-blue-700">{researchStateOS.stage}</p>
+                        </div>
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <p className="text-[10px] text-slate-500 font-bold mb-1">Model Readiness Score</p>
+                            <div className="flex items-end gap-1">
+                                <p className="text-2xl font-black text-emerald-600">{readinessScore}</p>
+                                <p className="text-xs text-slate-400 font-bold mb-1">/ 100</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                        <p className="text-xs font-bold text-blue-800 mb-2">Next Recommended Actions</p>
+                        <ul className="list-disc list-inside space-y-1">
+                            {nextActions.map((action, idx) => (
+                                <li key={idx} className="text-sm text-blue-600 font-medium">{action}</li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            )}
 
             {/* Alerts if any thresholds are exceeded */}
             {isFeatureEnabled('FEATURE_RESEARCH_ALERTS') && (
