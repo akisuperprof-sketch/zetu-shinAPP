@@ -100,3 +100,35 @@ Rules governing the handling of research datasets collected within the ZETUSHIN 
 -   **Research-only Usage Policy**: Data collected via Research OS modules is strictly for algorithm validation and must not be used for diagnostic commercial services without further validation.
 -   **User Data Deletion Procedure**: The system must support the complete erasure of user-specific analysis records and associated images upon request.
 -   **Consent Requirements**: Inclusion in the research dataset requires an explicit `research_consent` flag to be set to true at the time of session creation.
+
+## 17. Dataset Coverage Monitoring
+
+### Purpose
+The system must track dataset coverage for each research category to ensure balanced data collection and prevent dataset bias. This monitoring layer is used by the research dashboard to visualize dataset completeness and identify underrepresented categories.
+
+### Coverage Table Template
+| Category | Image Count | Target | Status |
+|----------|-------------|--------|--------|
+| Normal | 0 | 200 | insufficient |
+| Qi Deficiency | 0 | 200 | insufficient |
+| Blood Stasis | 0 | 200 | insufficient |
+| Heat | 0 | 200 | insufficient |
+| Cold | 0 | 200 | insufficient |
+| Dampness | 0 | 200 | insufficient |
+| Yin Deficiency | 0 | 200 | insufficient |
+| Yang Deficiency | 0 | 200 | insufficient |
+
+### Definitions
+- **Category**: Research classification used for dataset balancing and model validation.
+- **Image Count**: Current number of images collected for the category.
+- **Target**: Desired minimum dataset size required for statistical validation.
+- **Status**: Coverage state of the category. Possible values: `insufficient`, `in progress`, `complete`.
+
+### Research Dashboard Integration
+The research dashboard must display dataset coverage in a visual format that allows researchers to immediately identify underrepresented categories. The dashboard should highlight:
+- Categories below target
+- Total dataset size
+- Progress toward balanced dataset coverage
+
+### Governance
+Dataset coverage monitoring must follow the Dataset Governance rules defined in this specification.
