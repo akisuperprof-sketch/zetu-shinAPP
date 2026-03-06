@@ -1,33 +1,39 @@
 import { ResearchStage } from '../../constants/researchStages';
+import { CoverageItem } from './dataCoverage';
 
-export function getNextResearchActions(stage: ResearchStage): string[] {
+export function getNextResearchActions(stage: ResearchStage, shortage_top5: CoverageItem[], roi_fail_rate: number): string[] {
+    const actions: string[] = [];
+
+    if (roi_fail_rate > 0.2) {
+        actions.push('Improve capture quality: reduce ROI failure by centering tongue');
+    }
+
     switch (stage) {
         case ResearchStage.DATA_COLLECTION:
-            return [
-                'Collect more tongue color samples',
-                'Ensure balanced lighting conditions'
-            ];
+            actions.push('Collect basic tongue images mapping to valid patients');
+            break;
         case ResearchStage.DATA_BALANCING:
-            return [
-                'Check data coverage panel for shortages',
-                'Collect coating thickness variations'
-            ];
+            shortage_top5.forEach(s => {
+                actions.push(`Collect more: ${s.axis}=${s.label} (need +${s.shortage})`);
+            });
+            break;
         case ResearchStage.LABEL_ALIGNMENT:
-            return [
-                'Request expert labeling',
-                'Review mismatch top reasons in dashboard'
-            ];
+            actions.push('Request expert labeling to increase count');
+            actions.push('Review mismatch top reasons in dashboard to align mapping rules');
+            break;
         case ResearchStage.MODEL_EXPLORATION:
-            return [
-                'Prepare ML training dataset',
-                'Extract and save feature vectors'
-            ];
+            actions.push('Prepare ML training dataset export');
+            actions.push('Investigate initial feature correlation');
+            break;
         case ResearchStage.MODEL_REFINEMENT:
-            return [
-                'Fine-tune algorithms',
-                'Validate against hold-out sets'
-            ];
-        default:
-            return ['Continue current operations'];
+            actions.push('Focus on hard edge cases and false positives');
+            actions.push('Validate against a strict hold-out dataset');
+            break;
     }
+
+    if (actions.length === 0) {
+        actions.push('Continue normal data collection operations');
+    }
+
+    return actions.slice(0, 7);
 }

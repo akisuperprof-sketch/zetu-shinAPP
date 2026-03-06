@@ -7,7 +7,6 @@ import { isFeatureEnabled } from '../utils/featureFlags';
 import { evaluateExpertAgreement, ExpertEvaluationMetrics } from '../services/research/expertEvaluation';
 import { evaluateResearchState, ResearchState } from '../services/research/researchOS';
 import { getNextResearchActions } from '../services/research/researchPlanner';
-import { calculateModelReadiness } from '../services/research/modelReadiness';
 
 interface ResearchDashboardProps {
     records?: ObservationData[];
@@ -18,8 +17,6 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
     const [allTimeMetrics, setAllTimeMetrics] = useState<ResearchMetrics | null>(null);
     const [expertMetrics, setExpertMetrics] = useState<ExpertEvaluationMetrics | null>(null);
     const [researchStateOS, setResearchStateOS] = useState<ResearchState | null>(null);
-    const [readinessScore, setReadinessScore] = useState<number>(0);
-    const [nextActions, setNextActions] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [fetchedRecords, setFetchedRecords] = useState<ObservationData[]>([]);
 
@@ -44,8 +41,6 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
 
                 const stateOS = evaluateResearchState(dataToUse || []);
                 setResearchStateOS(stateOS);
-                setReadinessScore(calculateModelReadiness(stateOS.total_records, stateOS.labeled_records, stateOS.agreement_rate));
-                setNextActions(getNextResearchActions(stateOS.stage));
             } catch (err) {
                 console.error(err);
             } finally {
@@ -89,15 +84,31 @@ const ResearchDashboard: React.FC<ResearchDashboardProps> = ({ records, onBack }
                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                             <p className="text-[10px] text-slate-500 font-bold mb-1">Model Readiness Score</p>
                             <div className="flex items-end gap-1">
-                                <p className="text-2xl font-black text-emerald-600">{readinessScore}</p>
+                                <p className="text-2xl font-black text-emerald-600">{researchStateOS.model_readiness.score}</p>
                                 <p className="text-xs text-slate-400 font-bold mb-1">/ 100</p>
                             </div>
+                            <p className="text-[10px] mt-1 text-slate-500">{researchStateOS.model_readiness.ready ? '✅ READY' : '❌ NOT READY'}</p>
                         </div>
                     </div>
+
+                    {researchStateOS.shortage_top5.length > 0 && (
+                        <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 mb-4">
+                            <p className="text-xs font-bold text-orange-800 mb-2">Top Shortages</p>
+                            <ul className="text-xs space-y-1 text-orange-700">
+                                {researchStateOS.shortage_top5.map((s, idx) => (
+                                    <li key={idx} className="flex justify-between border-b border-orange-100/50 pb-1">
+                                        <span>{s.axis} = {s.label}</span>
+                                        <span className="font-bold">need +{s.shortage}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                         <p className="text-xs font-bold text-blue-800 mb-2">Next Recommended Actions</p>
                         <ul className="list-disc list-inside space-y-1">
-                            {nextActions.map((action, idx) => (
+                            {researchStateOS.next_actions.map((action, idx) => (
                                 <li key={idx} className="text-sm text-blue-600 font-medium">{action}</li>
                             ))}
                         </ul>
