@@ -1,6 +1,5 @@
-
 /**
- * Z-26 Robust API Client (Hardened v1.0)
+ * ZETUSHIN Robust API Client (Hardened v1.0)
  * - Request Tracing (x-request-id)
  * - Exponential Backoff Retries
  * - Standardized Error Parsing
