@@ -1,5 +1,4 @@
-
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 export function verifyAdminToken(req: any) {
     const authHeader = req.headers['authorization'];
