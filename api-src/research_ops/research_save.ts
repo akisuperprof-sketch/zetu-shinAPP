@@ -52,29 +52,33 @@ export default async function handler(req: any, res: any) {
             pattern_ids,
             analysis_mode,
             // Preprocessing Config
-            processing_mode = 'off' // off | light | full
+            processing_mode = 'off', // off | light | full
+            original_path: providedOriginalPath // Optional bypass for base64
         } = payload
 
-        if (!anon_id || !image_base64) {
-            throw new Error('Missing required fields (anon_id or image)')
+        if (!anon_id || (!image_base64 && !providedOriginalPath)) {
+            throw new Error('Missing required fields (anon_id and either image or original_path)')
         }
 
         const dateStr = new Date().toISOString().split('T')[0]
         const uuid = crypto.randomUUID();
         const extension = image_mime_type?.includes('png') ? 'png' : 'jpg';
-        const baseName = `${anon_id}/${dateStr}/${uuid}`;
-        const storagePath = `${baseName}.${extension}`;
+        const baseName = providedOriginalPath ? providedOriginalPath.replace(/\.[^/.]+$/, "") : `${anon_id}/${dateStr}/${uuid}`;
+        const storagePath = providedOriginalPath || `${baseName}.${extension}`;
 
-        // 1. 画像を Storage に保存 (Original)
-        const imageBuffer = Buffer.from(image_base64, 'base64');
-        const { error: uploadError } = await supabaseClient.storage
-            .from('tongue-original')
-            .upload(storagePath, imageBuffer, {
-                contentType: image_mime_type || 'image/jpeg',
-                upsert: true
-            })
+        // 1. 画像を Storage に保存 (image_base64 がある場合のみ)
+        let imageBuffer: Buffer | null = null;
+        if (image_base64) {
+            imageBuffer = Buffer.from(image_base64, 'base64');
+            const { error: uploadError } = await supabaseClient.storage
+                .from('tongue-original')
+                .upload(storagePath, imageBuffer, {
+                    contentType: image_mime_type || 'image/jpeg',
+                    upsert: true
+                })
 
-        if (uploadError) throw uploadError
+            if (uploadError) throw uploadError
+        }
 
         // 2. 特徴量抽出・前処理（シミュレーション）
         let processedPath = null
@@ -95,19 +99,32 @@ export default async function handler(req: any, res: any) {
                 qScore = Math.floor(Math.random() * 40) + 60 // 60-100
                 qFlags = { blur: false, dark: false, glare: false }
 
+                const copyFile = async (fromBucket: string, fromPath: string, toBucket: string, toPath: string, buffer: Buffer | null) => {
+                    if (buffer) {
+                        return await supabaseClient.storage.from(toBucket).upload(toPath, buffer, { contentType: image_mime_type, upsert: true });
+                    } else {
+                        // Use storage copy API if no buffer (direct path flow)
+                        return await supabaseClient.storage.from(fromBucket).copy(fromPath, toPath, { destinationBucket: toBucket });
+                    }
+                };
+
                 if (processing_mode === 'light') {
                     segStatus = 'completed'
                     segMethod = 'light-edge-v1'
                     processedPath = `${baseName}_light.${extension}`
-                    // 同一画像を流用
-                    await supabaseClient.storage.from('tongue-processed').upload(processedPath, imageBuffer, { contentType: image_mime_type, upsert: true })
+
+                    const { error: cErr } = await copyFile('tongue-original', storagePath, 'tongue-processed', processedPath, imageBuffer);
+                    if (cErr) throw cErr;
                 } else if (processing_mode === 'full') {
                     segStatus = 'completed'
                     segMethod = 'full-sam-v2'
                     processedPath = `${baseName}_full.${extension}`
                     maskPath = `${baseName}_mask.png`
 
-                    await supabaseClient.storage.from('tongue-processed').upload(processedPath, imageBuffer, { contentType: image_mime_type, upsert: true })
+                    const { error: cErr1 } = await copyFile('tongue-original', storagePath, 'tongue-processed', processedPath, imageBuffer);
+                    if (cErr1) throw cErr1;
+
+                    // Mask simulation stays empty or copies original for now
                     await supabaseClient.storage.from('tongue-mask').upload(maskPath, Buffer.from([]), { contentType: 'image/png', upsert: true })
                 }
             } catch (err: any) {
@@ -131,7 +148,7 @@ export default async function handler(req: any, res: any) {
                 quality_flags: qFlags,
                 processing_error: pError,
                 age_range,
-                gender,
+                gender: gender || 'その他',
                 chief_complaint,
                 consent_version,
                 consent_at: consent_at || new Date().toISOString(),

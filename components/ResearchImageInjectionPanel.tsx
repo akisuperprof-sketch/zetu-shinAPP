@@ -75,18 +75,63 @@ const ResearchImageInjectionPanel: React.FC = () => {
             const f = updatedFiles[i];
             if (f.status !== 'pending') continue;
 
-            updatedFiles[i] = { ...f, status: 'uploading', processing: { stage: 'Preparing payload...' } };
-            setFiles([...updatedFiles]);
-
             try {
-                const base64 = await convertToBase64(f.file);
-
                 const fallbackAnonId = '00000000-0000-0000-0000-000000000000';
                 const anonId = session?.anonId || fallbackAnonId;
+                const extension = f.file.name.split('.').pop()?.toLowerCase() || 'jpg';
+                const dateStr = new Date().toISOString().split('T')[0];
+                const uuid = typeof window.crypto.randomUUID === 'function'
+                    ? window.crypto.randomUUID()
+                    : Math.random().toString(36).substring(2, 15);
+                const storagePath = `${anonId}/${dateStr}/${uuid}.${extension}`;
+
+                // --- 1. Get Signed URL ---
+                updatedFiles[i] = { ...f, status: 'uploading', processing: { stage: 'Requesting URL...' } };
+                setFiles([...updatedFiles]);
+
+                const urlRes = await fetch('/api/research/get_upload_url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        bucket: 'tongue-original',
+                        path: storagePath,
+                        contentType: f.file.type || 'image/jpeg'
+                    })
+                });
+
+                if (!urlRes.ok) {
+                    const errorMsg = `URL Request Failed (${urlRes.status})`;
+                    updatedFiles[i] = { ...f, status: 'failed', error: errorMsg, processing: { stage: 'Error' } };
+                    setFiles([...updatedFiles]);
+                    continue;
+                }
+
+                const { signedUrl } = await urlRes.json();
+
+                // --- 2. Direct Binary Upload ---
+                updatedFiles[i] = { ...updatedFiles[i], processing: { stage: 'Uploading Binary...' } };
+                setFiles([...updatedFiles]);
+
+                const uploadRes = await fetch(signedUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': f.file.type || 'image/jpeg' },
+                    body: f.file
+                });
+
+                if (!uploadRes.ok) {
+                    const errorMsg = `Storage Upload Failed (${uploadRes.status})`;
+                    updatedFiles[i] = { ...updatedFiles[i], status: 'failed', error: errorMsg, processing: { stage: 'Error' } };
+                    setFiles([...updatedFiles]);
+                    continue;
+                }
+
+                // --- 3. Finalize & Record ---
+                updatedFiles[i] = { ...updatedFiles[i], processing: { stage: 'Finalizing...' } };
+                setFiles([...updatedFiles]);
 
                 const payload = {
                     anon_id: anonId,
-                    image_base64: base64,
+                    original_path: storagePath,
                     image_mime_type: f.file.type || 'image/jpeg',
                     age_range: 'unknown',
                     gender: 'その他',
@@ -101,15 +146,9 @@ const ResearchImageInjectionPanel: React.FC = () => {
                     processing_mode: processingMode
                 };
 
-                updatedFiles[i] = { ...updatedFiles[i], processing: { stage: processingMode === 'off' ? 'Saving...' : 'Processing & Saving...' } };
-                setFiles([...updatedFiles]);
-
-                // Update endpoint to use Vercel API route
                 const res = await fetch(`/api/research_save`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
@@ -126,12 +165,11 @@ const ResearchImageInjectionPanel: React.FC = () => {
                     };
                 } else {
                     const errData = await res.json().catch(() => ({}));
-                    const errorMsg = errData.error || errData.message || `HTTP ${res.status}`;
-                    console.error('[Injection] Response Error:', errData);
-                    updatedFiles[i] = { ...f, status: 'failed', error: errorMsg, processing: { stage: 'Failed' } };
+                    const errorMsg = errData.error || errData.message || `Record Failed (${res.status})`;
+                    updatedFiles[i] = { ...updatedFiles[i], status: 'failed', error: errorMsg, processing: { stage: 'Failed' } };
                 }
             } catch (err: any) {
-                console.error('[Injection] Request Error:', err);
+                console.error('[Injection] Error:', err);
                 updatedFiles[i] = { ...f, status: 'failed', error: err.message || 'Network Error', processing: { stage: 'Error' } };
             }
             setFiles([...updatedFiles]);
