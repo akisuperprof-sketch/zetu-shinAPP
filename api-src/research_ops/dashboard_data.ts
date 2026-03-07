@@ -63,6 +63,7 @@ export default async function handler(req: any, res: any) {
 
         if (errTotal || errRecent) {
             console.error('[dashboard_data] DB Error:', errTotal || errRecent);
+            return res.status(500).json({ error: 'Database error', details: errTotal || errRecent });
         }
 
         return res.status(200).json({
@@ -78,11 +79,19 @@ export default async function handler(req: any, res: any) {
                     not_processed: notProcessed || 0,
                     failed: failedCount || 0,
                     low_quality: lowQuality || 0
+                },
+                debug: {
+                    has_url: !!SUPABASE_URL,
+                    has_key: !!SUPABASE_KEY
                 }
             }
         });
     } catch (e: any) {
         console.error('[dashboard_data] General error:', e);
-        return res.status(500).json({ error: 'Unknown server error', details: e.message });
+        return res.status(500).json({
+            error: 'Unknown server error',
+            details: e.message,
+            stack: e.stack?.substring(0, 200)
+        });
     }
 }
