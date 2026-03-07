@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'node:crypto';
+
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': 'https://zetu-shin-app.vercel.app',
