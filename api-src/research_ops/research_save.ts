@@ -175,20 +175,44 @@ export default async function handler(req: any, res: any) {
 
         if (analysisError) throw analysisError
 
-        // 5. research_events に保存
-        await supabaseClient.from('research_events').insert({
+        // 5. research_events に詳細ログを記録
+        const events: any[] = [
+            {
+                anon_id,
+                event_type: 'image_upload',
+                message: `Image saved to tongue-original: ${storagePath}`,
+                related_id: obsData.id,
+                metadata: { bucket: 'tongue-original', path: storagePath }
+            },
+            {
+                anon_id,
+                event_type: 'db_record_created',
+                message: 'Observation and Analysis records successfully created in DB',
+                related_id: obsData.id
+            }
+        ];
+
+        if (processing_mode !== 'off') {
+            events.push({
+                anon_id,
+                event_type: segStatus === 'completed' ? 'segmentation_completed' : 'error',
+                message: segStatus === 'completed'
+                    ? `Segmentation successful using ${segMethod}. Score: ${qScore}`
+                    : `Segmentation failed: ${pError}`,
+                related_id: obsData.id,
+                metadata: { method: segMethod, score: qScore, error: pError }
+            });
+        }
+
+        events.push({
             anon_id,
             event_type: 'analysis_completed',
-            metadata: {
-                observation_id: obsData.id,
-                mode: analysis_mode,
-                processing: {
-                    mode: processing_mode,
-                    status: segStatus,
-                    score: qScore
-                }
-            }
-        })
+            message: `Research pipeline completed for mode: ${analysis_mode}`,
+            related_id: obsData.id,
+            metadata: { mode: analysis_mode }
+        });
+
+        await supabaseClient.from('research_events').insert(events);
 
         return res.status(200).json({
             success: true,

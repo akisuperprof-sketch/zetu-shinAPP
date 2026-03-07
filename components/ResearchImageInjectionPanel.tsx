@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { getSession } from '../utils/userSession';
 import { isFeatureEnabled } from '../utils/featureFlags';
 import { FileUploadStatus, UploadBatchSummary } from '../types/researchUpload';
@@ -8,12 +8,30 @@ import { FileUploadStatus, UploadBatchSummary } from '../types/researchUpload';
  * 開発・研究用 画像大量投入パネル (v1)
  * 既存の research_save パイプラインを流用して、ローカルから複数の画像を直接投入する。
  */
-const ResearchImageInjectionPanel: React.FC = () => {
+interface ResearchImageInjectionPanelProps {
+    onRefresh?: () => void;
+}
+
+const ResearchImageInjectionPanel: React.FC<ResearchImageInjectionPanelProps> = ({ onRefresh }) => {
     const [files, setFiles] = useState<FileUploadStatus[]>([]);
     const [uploading, setUploading] = useState(false);
-    const [batchName, setBatchName] = useState('');
-    const [memo, setMemo] = useState('');
+
+    // States with stickiness
+    const [batchName, setBatchName] = useState(() => localStorage.getItem('last_batch_name') || '');
+    const [memo, setMemo] = useState(() => localStorage.getItem('last_batch_memo') || '');
+    const [ageRange, setAgeRange] = useState(() => localStorage.getItem('last_age_range') || 'unknown');
+    const [gender, setGender] = useState(() => localStorage.getItem('last_gender') || 'その他');
+    const [chiefComplaint, setChiefComplaint] = useState(() => localStorage.getItem('last_chief_complaint') || '');
     const [processingMode, setProcessingMode] = useState<'off' | 'light' | 'full'>('off');
+
+    // Persistence Effect
+    useEffect(() => {
+        localStorage.setItem('last_batch_name', batchName);
+        localStorage.setItem('last_batch_memo', memo);
+        localStorage.setItem('last_age_range', ageRange);
+        localStorage.setItem('last_gender', gender);
+        localStorage.setItem('last_chief_complaint', chiefComplaint);
+    }, [batchName, memo, ageRange, gender, chiefComplaint]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Feature Flag and Component Level Guard
@@ -133,9 +151,9 @@ const ResearchImageInjectionPanel: React.FC = () => {
                     anon_id: anonId,
                     original_path: storagePath,
                     image_mime_type: f.file.type || 'image/jpeg',
-                    age_range: 'unknown',
-                    gender: 'その他',
-                    chief_complaint: `[IMAGE_INJECTION] Batch: ${batchName || 'none'} | Memo: ${memo || 'none'}`,
+                    age_range: ageRange,
+                    gender: gender || 'その他',
+                    chief_complaint: chiefComplaint || `[IMAGE_INJECTION] Batch: ${batchName || 'none'} | Memo: ${memo || 'none'}`,
                     consent_version: 'injection_v1.0',
                     consent_at: new Date().toISOString(),
                     answers_json: { injection: true, batch_name: batchName, memo: memo },
@@ -175,6 +193,23 @@ const ResearchImageInjectionPanel: React.FC = () => {
             setFiles([...updatedFiles]);
         }
         setUploading(false);
+        if (onRefresh) onRefresh();
+    };
+
+    const applyPreset = (preset: 'A' | 'B' | 'C') => {
+        if (preset === 'A') {
+            setAgeRange('30s');
+            setGender('女性');
+            setChiefComplaint('冷え改善の検証用');
+        } else if (preset === 'B') {
+            setAgeRange('50s');
+            setGender('男性');
+            setChiefComplaint('慢性疲労の検証用');
+        } else if (preset === 'C') {
+            setAgeRange('unknown');
+            setGender('その他');
+            setChiefComplaint('バルク投入テスト');
+        }
     };
 
     const summary: UploadBatchSummary = {
@@ -195,25 +230,73 @@ const ResearchImageInjectionPanel: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">バッチ名 (任意)</label>
-                    <input
-                        type="text"
-                        value={batchName}
-                        onChange={e => setBatchName(e.target.value)}
-                        placeholder="例: 病院_A_2026"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-                    />
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap gap-2">
+                    <span className="text-[10px] font-black text-slate-500 uppercase flex items-center mr-2">Presets:</span>
+                    <button onClick={() => applyPreset('A')} className="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-[10px] font-black border border-slate-700 transition-colors">👩 30s Cold</button>
+                    <button onClick={() => applyPreset('B')} className="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-[10px] font-black border border-slate-700 transition-colors">👨 50s Fatigue</button>
+                    <button onClick={() => applyPreset('C')} className="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-[10px] font-black border border-slate-700 transition-colors">🔄 Default</button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">年代</label>
+                        <select
+                            value={ageRange}
+                            onChange={e => setAgeRange(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        >
+                            <option value="unknown">不明</option>
+                            <option value="10s">10代</option>
+                            <option value="20s">20代</option>
+                            <option value="30s">30代</option>
+                            <option value="40s">40代</option>
+                            <option value="50s">50代</option>
+                            <option value="60s">60代</option>
+                            <option value="70s+">70代〜</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">性別</label>
+                        <select
+                            value={gender}
+                            onChange={e => setGender(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        >
+                            <option value="男性">男性</option>
+                            <option value="女性">女性</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">主訴・タグ</label>
+                        <input
+                            type="text"
+                            value={chiefComplaint}
+                            onChange={e => setChiefComplaint(e.target.value)}
+                            placeholder="冷え、むくみ等"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">バッチ名</label>
+                        <input
+                            type="text"
+                            value={batchName}
+                            onChange={e => setBatchName(e.target.value)}
+                            placeholder="病院A-2026"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        />
+                    </div>
                 </div>
                 <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">メモ (任意)</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">内部メモ</label>
                     <input
                         type="text"
                         value={memo}
                         onChange={e => setMemo(e.target.value)}
-                        placeholder="例: 検証用サンプル 10件"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                        placeholder="検証用サンプル..."
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 text-slate-400 italic"
                     />
                 </div>
             </div>
