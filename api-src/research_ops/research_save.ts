@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': 'https://zetu-shin-app.vercel.app',
@@ -7,23 +7,34 @@ const corsHeaders = {
 }
 
 /**
- * ZETUSHIN Research DB Save Edge Function (v1.1)
- * 目的: 同意済みユーザーのデータ（画像・問診・結果）を匿名で保存する。
- * 前処理パイプラインのシミュレーション（off/light/full）を実装。
+ * ZETUSHIN Research DB Save API Route (v1.1)
+ * Converted from Edge Function to Vercel API Route due to Supabase auth limits
  */
-Deno.serve(async (req) => {
+export default async function handler(req: any, res: any) {
     // CORS check
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+        Object.entries(corsHeaders).forEach(([key, value]) => {
+            res.setHeader(key, value);
+        });
+        return res.status(200).end();
     }
 
-    try {
-        const supabaseClient = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        )
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+        res.setHeader(key, value);
+    });
 
-        const payload = await req.json()
+    try {
+        const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+            console.error('[research_save] Missing Supabase config');
+            return res.status(500).json({ error: 'Server configuration error' });
+        }
+
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        const payload = req.body;
         const {
             anon_id,
             image_base64,
@@ -47,13 +58,13 @@ Deno.serve(async (req) => {
         }
 
         const dateStr = new Date().toISOString().split('T')[0]
-        const uuid = crypto.randomUUID()
-        const extension = image_mime_type?.includes('png') ? 'png' : 'jpg'
-        const baseName = `${anon_id}/${dateStr}/${uuid}`
-        const storagePath = `${baseName}.${extension}`
+        const uuid = crypto.randomUUID();
+        const extension = image_mime_type?.includes('png') ? 'png' : 'jpg';
+        const baseName = `${anon_id}/${dateStr}/${uuid}`;
+        const storagePath = `${baseName}.${extension}`;
 
         // 1. 画像を Storage に保存 (Original)
-        const imageBuffer = Uint8Array.from(atob(image_base64), c => c.charCodeAt(0))
+        const imageBuffer = Buffer.from(image_base64, 'base64');
         const { error: uploadError } = await supabaseClient.storage
             .from('tongue-original')
             .upload(storagePath, imageBuffer, {
@@ -95,9 +106,9 @@ Deno.serve(async (req) => {
                     maskPath = `${baseName}_mask.png`
 
                     await supabaseClient.storage.from('tongue-processed').upload(processedPath, imageBuffer, { contentType: image_mime_type, upsert: true })
-                    await supabaseClient.storage.from('tongue-mask').upload(maskPath, new Uint8Array([0, 0, 0, 0]), { contentType: 'image/png', upsert: true })
+                    await supabaseClient.storage.from('tongue-mask').upload(maskPath, Buffer.from([]), { contentType: 'image/png', upsert: true })
                 }
-            } catch (err) {
+            } catch (err: any) {
                 segStatus = 'failed'
                 pError = err.message
             }
@@ -160,31 +171,19 @@ Deno.serve(async (req) => {
             }
         })
 
-        return new Response(
-            JSON.stringify({
-                success: true,
-                observation_id: obsData.id,
-                processing: {
-                    status: segStatus,
-                    score: qScore,
-                    method: segMethod,
-                    error: pError
-                }
-            }),
-            {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 200
+        return res.status(200).json({
+            success: true,
+            observation_id: obsData.id,
+            processing: {
+                status: segStatus,
+                score: qScore,
+                method: segMethod,
+                error: pError
             }
-        )
+        });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Record storage failed:', error.message)
-        return new Response(
-            JSON.stringify({ success: false, error: error.message }),
-            {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 400
-            }
-        )
+        return res.status(400).json({ success: false, error: error.message });
     }
-})
+}
