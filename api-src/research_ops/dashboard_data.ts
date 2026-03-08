@@ -9,15 +9,6 @@ export default async function handler(req: any, res: any) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    // DEBUG STUB: If this works, the function invocation is successful.
-    if (req.query.stub === 'true') {
-        return res.status(200).json({
-            ok: true,
-            message: "STUB_ACTIVE",
-            env: { has_url: !!process.env.VITE_SUPABASE_URL }
-        });
-    }
-
     if (!verifyAdminToken(req)) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
